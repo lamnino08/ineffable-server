@@ -1,35 +1,42 @@
-// import { Router, Request, Response } from 'express';
+import { Router } from "express";
+import { verifyToken } from "@/middleware/auth";
+import { addBoardgame } from "@/controllers/boardgameController";
+import { validate, boardgameCreateSchema } from "@/validation/boardgameValidation";
 
-// const router = Router();
+const router = Router();
 
-// /**
-//  * @swagger
-//  * /auth/login:
-//  *   post:
-//  *     summary: Log in an existing user
-//  *     description: This endpoint allows users to log in by providing an email and password.
-//  *     requestBody:
-//  *       required: true
-//  *       content:
-//  *         application/json:
-//  *           schema:
-//  *             type: object
-//  *             properties:
-//  *               email:
-//  *                 type: string
-//  *               password:
-//  *                 type: string
-//  *             required:
-//  *               - email
-//  *               - password
-//  *     responses:
-//  *       200:
-//  *         description: Login successful and returns a token
-//  *       401:
-//  *         description: Invalid credentials
-//  */
-// router.post('/login', , async (req: Request, res: Response) => {
+/**
+ * @swagger
+ * /boardgame:
+ *   post:
+ *     summary: Add a new boardgame
+ *     description: Adds a new boardgame with the provided name and BoardGameGeek URL.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               boardgamegeek_url:
+ *                 type: string
+ *             required:
+ *               - name
+ *               - boardgamegeek_url
+ *     responses:
+ *       201:
+ *         description: Boardgame created successfully
+ *       400:
+ *         description: Invalid input data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.post("/", verifyToken, validate(boardgameCreateSchema), addBoardgame);
 
-// });
-
-// export default router;
+export default router;

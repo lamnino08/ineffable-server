@@ -17,11 +17,11 @@ export const handleSignUp = async (req: Request, res: Response): Promise<Respons
     const { email, password, username } = req.body;
 
     if (await isEmailRegistered(email)) {
-      return res.status(400).json({ error: "Email is already registered." });
+      return res.status(400).json({ message: "Email is already registered." });
     }
 
     if (await isUsernameRegistered(username)) {
-      return res.status(400).json({ error: "Username is already taken." });
+      return res.status(400).json({ message: "Username is already taken." });
     }
     const email_hash = hashEmail(email);
     const password_hash = await hashPassword(password);
@@ -31,31 +31,32 @@ export const handleSignUp = async (req: Request, res: Response): Promise<Respons
     await markEmailAsRegistered(email);
     await markUsernameAsRegistered(username);
 
-    return res.status(201).json({ message: 'User registered successfully' });
+    return res.status(201).json({ message: 'Sign-up successful. Please log in to continue' });
   } catch (error) {
     console.log("[Signup]", error);
-    return res.status(500).json({ error: (error as Error).message });
+    return res.status(500).json({ message: (error as Error).message });
   }
 };
 
 // Handle user login
 export const handleLogin = async (req: Request, res: Response): Promise<Response> => {
   try {
+    console.log("LOGIN REQUEST");
     const { email, password } = req.body;
 
     if (!(await isEmailRegistered(email))) {
-      return res.status(400).json({ error: "Email is not registered." });
+      return res.status(400).json({ message: "Email is not registered." });
     }
 
     const emailHash = hashEmail(email);
     const user = await getUserByEmail(emailHash);
     if (!user) {
-      return res.status(401).json({ error: 'User not found' });
+      return res.status(401).json({ message: 'User not found' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     const token = jwt.sign({ id: user.user_id, role: user.role }, process.env.JWT_SECRET || 'secret', {

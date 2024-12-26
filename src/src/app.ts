@@ -6,6 +6,7 @@ import cors from 'cors'
 import config from "@/config";
 
 import authRoute from '@/routes/authRoute'
+import boardgameRoute from '@/routes/boardgameRoute'
 
 import swaggerDocs from "@/config/swagger"
 import { initRedis } from "@/config/database/redis"
@@ -33,6 +34,7 @@ initRedis();
 
 // Routes
 app.use("/auth", authRoute);
+app.use("/boardgame", boardgameRoute);
 
 // Swagger UI
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));

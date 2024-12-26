@@ -1,31 +1,44 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
+import { Request, Response, NextFunction } from "express";
 
-export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
-  const token = req.headers['authorization']?.split(' ')[1]; 
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: number;
+        role: string;
+      };
+    }
+  }
+}
+
+export const verifyToken = (req: Request, res: Response, next: NextFunction): void => {
+  const token = req.headers.authorization?.split(" ")[1]; // Lấy token từ header Authorization
 
   if (!token) {
-    return res.status(403).json({ error: 'Token is required' });
+     res.status(401).json({ error: "Token is required" }); 
+     return;
   }
 
   try {
-    // Verify the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
-    req.user = decoded as { id: string; email: string; role: string };;
-    next(); 
-  } catch (error) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    const decoded : any = jwt.verify(token, process.env.JWT_SECRET!);
+
+    const currentTime = Math.floor(Date.now() / 1000); 
+    if (decoded.exp && decoded.exp < currentTime) {
+      res.status(401).json({ error: "Token has expired" });
+      return;
+    }
+
+    req.user = { 
+      id: decoded.id,
+      role: decoded.role
+    };
+
+    next();
+  } catch (err) {
+    console.error("Token verification failed:", err);
+    res.status(401).json({ error: "Invalid or expired token" });
+    return;
   }
 };
 
-export const CheckAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user || !req.user.role) {
-    return res.status(403).json({ error: 'User information is missing. Please log in.' });
-  }
-
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
-  }
-
-  next();
-};

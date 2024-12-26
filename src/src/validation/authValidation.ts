@@ -14,7 +14,6 @@ export const loginSchema = z.object({
   password: z.string().min(6, { message: "Password must be at least 6 characters long" }),
 });
 
-// Validation middleware function
 export const validate =
   (schema: z.ZodSchema) =>
   (req: Request, res: Response, next: NextFunction): void => {
