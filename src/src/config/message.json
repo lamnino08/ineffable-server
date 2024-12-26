@@ -1,0 +1,202 @@
+{
+  "course": {
+    "creationError": {
+        "failed": "Course creation failed for the provided user ID. Please try again later."
+    },
+    "creationSuccess": {
+        "missCourseID": "You did not provide enough parameters that are required (course id). Please provide them and try again.",
+        "missCourseName": "You did not provide enough parameters that are required (course name). Please provide them and try again.",
+        "serverfail": "Something went wrong while processing your request.",
+        "courseNotFound": "There is no Course ID you provided.",
+        "noPermission": "This user does not have permission to change this course.",
+        "nameNotAvailable": "The provided name is not available."
+    },
+    "updateError": {
+      "courseNotFound": "Course not found",
+      "noPermission": "User has no permission",
+      "nameNotAvailable": "Name is not aivalable"
+    }
+  },
+  "chapter": {
+    "creationError": {
+        "missCourseID": "You did not provide enough parameters that are required. Please provide them and try again.",
+        "missNameChapter": "You did not provide enough parameters that are required. Please provide them and try again.",
+        "noPermission": "This user does not have permission to perform actions on this course.",
+        "failed": "Failed to create chapter in the course."
+    },
+    "creationSuccess": {
+        "missRequireInfor": "You did not provide enough parameters that are required. Please provide them and try again.",
+        "serverfail": "Something went wrong while processing your request.",
+        "noPermission": "This user does not have permission to change this chapter.",
+        "chapterNotFound": "You provided an ID of a chapter that was not found.",
+        "chapterNotBelongAnyCourse": "The chapter appears to not belong to any course."
+    },
+    "updateError": {
+      "chapterNotFound": "Chapter not found"
+    },
+    "deleteError": {
+      "chapterNotFound": "Chapter not found",
+      "courseNotFound": "Course not found",
+      "noPermission": "User has no permission"
+    }
+  },
+  "outline": {
+    "creationError": {
+        "missCourseID": "Miss course ID",
+        "noCourseID": "Course not found.",
+        "noPermission": "This user does not have permission to perform actions on this course.",
+        "failed": "Failed to create chapter in the course."
+    },
+    "creationSuccess": {
+        "missRequireInfor": "You did not provide enough parameters that are required. Please provide them and try again.",
+        "serverfail": "Something went wrong while processing your request.",
+        "noPermission": "This user does not have permission to change this chapter.",
+        "chapterNotFound": "You provided an ID of a chapter that was not found.",
+        "chapterNotBelongAnyCourse": "The chapter appears to not belong to any course."
+    },
+    "updateError": {
+      "outlineNotFound": "outline not found",
+      "courseNotFound": "Course not found",
+      "noPermission":  "User no permission",
+      "missDescription": "Miss description"
+    },
+    "deleteError": {
+      "outlineNotFound": "outline not found",
+      "courseNotFound": "Course not found",
+      "noPermission": "User not permission"
+    }
+  },
+  "lesson": {
+    "creationError": {
+        "missChapterID": "Miss ChapterID.",
+        "noChapterID": "No chapter found with the provided ID.",
+        "chapterNotFound": "Chapter do not belong to any course.",
+        "courseNotFound": "Course do not belong to any course.",
+        "noPermission": "You do not have permission to create this lesson on course."
+    },
+
+    "updateError": {
+        "missName": "Name is required.",
+        "missFile": "File is required.",
+        "lessonNotFound": "Lesson id not found"
+    },
+
+    "deleteSuccess": {
+      "description": "The lesson has been successfully deleted."
+    },
+
+    "deleteError": {
+        "fileDeletionFailed": "Failed delete lesson",
+        "missRequireInfor": "Lesson ID and User ID are required.",
+        "lessonNotFound": "No lesson found with the provided ID.",
+        "noChapterID": "No chapter found with the provided ID.",
+        "noPermission": "You do not have permission to delete this lesson."
+    }
+  },
+  "video": {
+    "uploadError": {
+      "title": "Unable to Upload Video. Please Try Again.",
+      "description": {
+        "fileMissing": "No video file was provided. Please attach a video file.",
+        "failFirebase": "There Something wrong when upload video"
+      }
+    },
+    "uploadSuccess": {
+      "title": "Success in Uploading Video"
+    }
+  },
+  "auth": {
+    "signupSuccess": {
+      "title": "Successful to create Account"
+    },
+
+    "signupError": {
+      "title": "Unable to signup. Please Try Again",
+      "description": {
+        "emailExists": "Email already exists. Please use a different email.",
+        "signupFailed": "User registration failed. Please try again later.",
+        "emptyEmail": "Email is not empty",
+        "invalidEmail": "Invalid email format. Please enter a valid email.",
+        "emptyPassword": "Password cannot be empty. Please enter a password.",
+        "passwordTooShort": "Password must be at least 6 characters long."
+      }
+    },
+
+    "loginSuccess": {
+      "title": "Login successful",
+      "description": "You have successfully logged in."
+    },
+
+    "loginError": {
+      "title": "Unable to login. Please Try Again",
+      "description": {
+        "loginFailed": "Login unsuccessful. Please check your credentials and try again.",
+        "unauthorized": "You do not have permission to perform this action.",
+        "emptyEmail": "Email cannot be empty. Please enter your email.",
+        "emptyPassword": "Password cannot be empty. Please enter your password.",
+        "invalidEmail": "Invalid email format. Please enter a valid email.",
+        "invalidCredentials": "Incorrect email or password. Please try again."
+      }
+    },
+    "token": {
+      "title": "Token fail",
+      "description": {
+        "missToken": "Require Token.",
+        "failDecodeToken": "Fail decode Token.",
+        "userNotFound": "User not found."
+      }
+    }
+  },
+  "permission": {
+    "title": "Denied access",
+    "description": {
+      "feature": "Your account do not have permission to perform thisaction"
+    }
+  },
+
+  "quiz": {
+    "createSuccess": "Quiz created successfully.",
+    "createError": "Failed to create quiz.",
+    "questionAddSuccess": "Question added successfully.",
+    "questionAddError": "Failed to add question.",
+    "submitSuccess": "Quiz submitted successfully.",
+    "submitError": "Failed to submit quiz.",
+    "pass": "Quiz passed.",
+    "fail": "Quiz failed. Please try again.",
+    "scoreBelowMin": "Your score is below 6/10. You need to retry."
+  },
+
+  "exercise": {
+    "createSuccess": {
+      "title": "Exercise created successfully",
+      "description": "The exercise has been successfully created."
+    },
+
+    "createError": {
+      "title": "Failed to create exercise",
+      "description": {
+        "missingLessonId": "Lesson ID is required to create an exercise.",
+        "missingFields": "Title, description, and language are required fields.",
+        "databaseError": "There was an error saving the exercise to the database."
+      }
+    },
+
+    "submissionSuccess": {
+      "title": "Exercise submitted successfully",
+      "description": "Your code has been successfully submitted and evaluated."
+    },
+
+    "submissionError": {
+      "title": "Failed to submit exercise",
+      "description": {
+        "runtimeError": "There was a runtime error or syntax error in your code.",
+        "missingFields": "Exercise ID, User ID, Code, and Language are required fields.",
+        "invalidLanguage": "The provided programming language is not supported."
+      }
+    }
+  },
+  "general": {
+    "internalServerError": "Something went wrong. Please try again later.",
+    "success": "Operation completed successfully."
+  }
+}
