@@ -1,0 +1,8 @@
+{
+    "auth": {
+        "sign-in": {
+            "email-not-registed": "Email is not registered",
+            "user-not-found": "User not found"
+        }
+    }
+}

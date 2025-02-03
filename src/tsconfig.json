@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "rootDir": "./src",
+    "resolveJsonModule": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,

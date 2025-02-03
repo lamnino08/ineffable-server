@@ -1,0 +1,63 @@
+{
+    "auth": {
+        "sign-in": {
+            "email-not-registed": "Email is not registed.",
+            "user-not-found": "User not found.",
+            "invalid-credentical": "Invalid credentials."
+        },
+        "sign-up": {
+            "email-exist": "Email is already exist",
+            "username-exist": "Username is already taken",
+            "success": "Sign-up successful. Please log in to continue"
+        },
+        "token": {
+            "login-require": "Login required"
+        }
+    },
+    "boardgame": {
+        "add": {
+            "error-add": "Fail to add new boardgame.",
+            "success": "Boardgame created successfully"
+        },
+        "update": {
+            "name": {
+                "success": "Boardgame name updated successfully"
+            },
+            "bgglink": {
+                "success": "Boardgame name updated successfully"
+            },
+            "shortcut": {
+                "success": "Boardgame shortcut updated successfully"
+            },
+            "description": {
+                "success": "Boardgame description updated successfully"
+            },
+            "number-player": {
+                "success": "Boardgame number player updated successfully"
+            },
+            "duration": {
+                "success": "Boardgame duration updated successfully"
+            }
+        },
+        "rule": {
+            "add": {
+                "success": "Add a rule successfully"
+            }
+        },
+        "image": {
+            "add": {
+                "success": "Add a image successfully"
+            },
+            "get": {
+                "success": "Get image successfully",
+                "error": "Fail to get image"
+            },
+            "update": {
+                "success": "Update image successfully"
+            },
+            "delete": {
+                "success": "Delete image successfully"
+            }
+        }
+    }
+}

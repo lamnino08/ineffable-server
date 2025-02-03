@@ -1,26 +1,14 @@
 import mysql, { Connection, ConnectionOptions } from "mysql2";
-import dotenv from "dotenv";
+import config from "@/config";
 
-dotenv.config({ path: ".env.dev" });
-
-// const config: ConnectionOptions = {
-//   host: process.env.DB_HOST as string,
-//   user: process.env.DB_USER as string,
-//   password: process.env.DB_PASSWORD as string,
-//   database: process.env.DB_NAME as string,
-// };
-
-const env = process.env.NODE_ENV || 'development';
-dotenv.config({ path: env === 'production' ? '.env.production' : '.env.development' });
-
-const config: ConnectionOptions = {
-    host: process.env.DB_HOST as string,
-    user: process.env.DB_USER as string,
-    password: process.env.DB_PASSWORD as string,
-    database: process.env.DB_NAME as string,
+const configSql: ConnectionOptions = {
+    host: config.mysql.host,
+    user: config.mysql.user,
+    password: config.mysql.password,
+    database: config.mysql.database,
 };
 
-const connection: Connection = mysql.createConnection(config);
+const connection: Connection = mysql.createConnection(configSql);
 
 connection.connect((err: mysql.QueryError | null) => {
   if (err) {

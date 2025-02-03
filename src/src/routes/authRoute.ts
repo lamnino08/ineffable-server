@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { handleSignUp, handleLogin, validateToken } from '../controllers/authController';
+import { handleSignUp, handleLogin, validateToken } from '@/controllers/auth/authController';
 import { validate, signUpSchema, loginSchema } from "@/validation/authValidation";
 
 const router = Router();
@@ -104,9 +104,8 @@ router.post('/login', validate(loginSchema), async (req: Request, res: Response)
  *       404:
  *         description: User not found
  */
-router.post('/validate', async (req: Request, res: Response) => {
+router.post('/verify-token', async (req: Request, res: Response) => {
   await validateToken(req, res); // Ensure async handler is properly awaited
 });
-
 
 export default router;
