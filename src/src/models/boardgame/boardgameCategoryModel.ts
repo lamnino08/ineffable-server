@@ -78,6 +78,31 @@ export const updateCategory = async (
   });
 };
 
+export const updateStatus = async (
+  category_id: number,
+  status: Status
+): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const query = `
+      UPDATE boardgame_categories
+      SET status = ?
+      WHERE category_id = ?;
+    `;
+
+    connection.query(
+      query,
+      [status, category_id],
+      (error) => {
+        if (error) {
+          console.error("Error updating category:", error);
+          return reject("Failed to update category");
+        }
+        resolve();
+      }
+    );
+  });
+};
+
 export const deleteCategory = async (category_id: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query = "DELETE FROM boardgame_categories WHERE category_id = ?";
@@ -93,18 +118,11 @@ export const deleteCategory = async (category_id: number): Promise<void> => {
 };
 
 export const getAllCategories = async (
-  user_id?: number,
   filters?: { status?: string; search?: string },
-  pagination?: { limit?: number; offset?: number }
 ): Promise<BoardgameCategory[]> => {
   return new Promise((resolve, reject) => {
-    let query = "SELECT * FROM boardgame_categories WHERE 1=1"; 
+    let query = "SELECT * FROM boardgame_categories WHERE 1=1";
     const values: any[] = [];
-
-    if (user_id) {
-      query += " AND user_id = ?";
-      values.push(user_id);
-    }
 
     // Filter by `status` if provided
     if (filters?.status) {
@@ -119,22 +137,104 @@ export const getAllCategories = async (
       values.push(searchTerm, searchTerm);
     }
 
-    // Add pagination
-    if (pagination?.limit) {
-      query += " LIMIT ?";
-      values.push(pagination.limit);
-    }
-    if (pagination?.offset) {
-      query += " OFFSET ?";
-      values.push(pagination.offset);
-    }
-
     connection.query(query, values, (error, results: RowDataPacket[]) => {
       if (error) {
         console.error("Error fetching categories:", error);
         return reject("Failed to fetch categories");
       }
-      resolve(results as BoardgameCategory[]); 
+      resolve(results as BoardgameCategory[]);
+    });
+  });
+};
+
+/**
+ * ✅ Like a category (prevents duplicates)
+ */
+export const likeCategory = async (user_id: number, category_id: number): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const query = "INSERT IGNORE INTO category_likes (user_id, category_id) VALUES (?, ?)";
+
+    connection.query(query, [user_id, category_id], (error) => {
+      if (error) {
+        console.error("❌ Error liking category:", error);
+        return reject("Failed to like category");
+      }
+      resolve();
+    });
+  });
+};
+
+/**
+ * ✅ Unlike a category
+ */
+export const unlikeCategory = async (user_id: number, category_id: number): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const query = "DELETE FROM category_likes WHERE user_id = ? AND category_id = ?";
+
+    connection.query(query, [user_id, category_id], (error) => {
+      if (error) {
+        console.error("❌ Error unliking category:", error);
+        return reject("Failed to unlike category");
+      }
+      resolve();
+    });
+  });
+};
+
+export const getAllCategoryLikes = async (): Promise<{ categoryId: number; likeCount: number }[]> => {
+  return new Promise((resolve, reject) => {
+    const query = `
+      SELECT category_id, COUNT(*) AS likeCount
+      FROM category_likes
+      GROUP BY category_id;
+    `;
+
+    connection.query(query, (error, results: RowDataPacket[]) => {
+      if (error) {
+        console.error("❌ Error fetching category like counts:", error);
+        return reject("Failed to fetch category like counts.");
+      }
+
+      resolve(results.map(row => ({
+        categoryId: row.category_id,
+        likeCount: row.likeCount,
+      })));
+    });
+  });
+};
+
+
+/**
+ * ✅ Check if user liked a category
+ */
+export const checkUserLiked = async (user_id: number, category_id: number): Promise<boolean> => {
+  return new Promise((resolve, reject) => {
+    const query = `
+      SELECT EXISTS (
+        SELECT 1 FROM category_likes WHERE user_id = ? AND category_id = ?
+      ) AS liked;
+    `;
+
+    connection.query(query, [user_id, category_id], (error, results: RowDataPacket[]) => {
+      if (error) {
+        console.error("❌ Error checking user like category:", error);
+        return reject("Failed to check category like");
+      }
+      resolve(Boolean(results[0].liked));
+    });
+  });
+};
+
+export const getCategorylikesCount = async (category_id: number): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    const query = "SELECT COUNT(*) AS total FROM category_likes WHERE category_id = ?;";
+
+    connection.query(query, [category_id], (error, results: RowDataPacket[]) => {
+      if (error) {
+        console.error("Error unlike category:", error);
+        return reject("Failed unlike category");
+      }
+      resolve(results[0].total);
     });
   });
 };
@@ -147,7 +247,7 @@ export const addCategoryToBoardgame = async (
 ): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query = `
-      INSERT INTO boardgame_categories_mapping (boardgame_id, category_id)
+      INSERT IGNORE INTO boardgame_categories_mapping (boardgame_id, category_id)
       VALUES (?, ?);
     `;
 
@@ -160,7 +260,7 @@ export const addCategoryToBoardgame = async (
     });
   });
 };
- 
+
 // Category and boardgame
 export const getCategoriesByBoardgame = async (
   boardgameId: number
@@ -169,7 +269,7 @@ export const getCategoriesByBoardgame = async (
     const query = `
       SELECT c.*
       FROM boardgame_categories_mapping bcm
-      INNER JOIN category c ON bcm.category_id = c.category_id
+      INNER JOIN boardgame_categories c ON bcm.category_id = c.category_id
       WHERE bcm.boardgame_id = ?;
     `;
 
@@ -220,6 +320,54 @@ export const getBoardgamesByCategory = async (
         return reject("Failed to retrieve boardgames for category.");
       }
       resolve(results);
+    });
+  });
+};
+
+/**
+ * 📌 Lấy số lượng boardgames trong một category
+ */
+export const getBoardgameCountByCategory = async (categoryId: number): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    const query = `
+      SELECT COUNT(*) AS total 
+      FROM boardgame_categories_mapping 
+      WHERE category_id = ?;
+    `;
+
+    connection.query(query, [categoryId], (error, results: RowDataPacket[]) => {
+      if (error) {
+        console.error("[MySQL Error] getBoardgameCountByCategory:", error);
+        return reject("Failed to count boardgames.");
+      }
+      resolve(results[0].total || 0);
+    });
+  });
+};
+
+/**
+ * 📌 Lấy số lượng boardgames của tất cả categories
+ */
+export const getAllBoardgameCounts = async (): Promise<{ categoryId: number; count: number }[]> => {
+  return new Promise((resolve, reject) => {
+    const query = `
+      SELECT category_id, COUNT(*) AS total 
+      FROM boardgame_categories_mapping 
+      GROUP BY category_id;
+    `;
+
+    connection.query(query, (error, results: RowDataPacket[]) => {
+      if (error) {
+        console.error("[MySQL Error] getAllBoardgameCounts:", error);
+        return reject("Failed to count boardgames for all categories.");
+      }
+
+      resolve(
+        results.map((row) => ({
+          categoryId: row.category_id,
+          count: row.total,
+        }))
+      );
     });
   });
 };

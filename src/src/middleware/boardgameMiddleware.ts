@@ -23,7 +23,7 @@ export const checkBoardgameOwner = async (req: Request, res: Response, next: Nex
 
         if (decoded.role !== "admin") {
             const gameId = req.params.gameId;
-            const isOwner = await checkOwnerBoardgame(gameId, decoded.id)
+            const isOwner = await checkOwnerBoardgame(Number(gameId), decoded.id)
             if (!isOwner) {
                 res.status(403).json({ error: "You do not have ownership of this boardgame" });
                 return;

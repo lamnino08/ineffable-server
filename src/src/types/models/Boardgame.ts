@@ -2,7 +2,8 @@ export interface Rule {
   rule_id: number;
   title: string;
   boardgame_id: string;
-  user_id: string;
+  user_id: number;
+  username: string;
   rule_url: string;
   language: string;
   type: "file" | "link";
@@ -50,24 +51,23 @@ export interface BoardgameDetails {
   isOwner: boolean;
   boardgame_id: number;
   name: string;
-  shortcut: string | null;
-  description: string | null;
-  genre: string | null;
-  age_group: string | null;
-  min_players: number | null;
-  max_players: number | null;
-  min_play_time: number | null;
-  max_play_time: number | null;
-  complexity_rating: number | null;
-  avatar_url: string | null;
-  background_image_url: string | null;
-  boardgamegeek_url: string | null;
+  shortcut: string;
+  description: string;
+  age: number;
+  min_players: number;
+  max_players: number;
+  min_play_time: number;
+  max_play_time: number;
+  weight: number;
+  avatar_url: string;
+  background_image_url: string;
+  boardgamegeek_url: string;
   is_approved: boolean;
   created_by: number;
   created_at: string;
   updated_at: string;
-  categories: string[];
-  mechanics: string[];
+  categories: BoardgameCategory[];
+  mechanics: BoardgameMechanic[];
 }
 
 export interface BoardgameCategory {
@@ -78,8 +78,10 @@ export interface BoardgameCategory {
   description: string;
   game_count: number;
   like_count: number;
+  liked: boolean;
   status: BoardgameCategoryStatus;
   create_at: Date;
+  user_name: string;
 }
 
 export type BoardgameCategoryStatus = "pending" | "public" | "hidden";
@@ -91,6 +93,11 @@ export interface BoardgameMechanic {
   img_url: string;
   description: string;
   game_count: number;
+  like_count: number;
+  liked: boolean;
+  status: BoardgameCategoryStatus;
+  create_at: Date;
+  user_name: string;
 }
 
 export type BoardgameMechanicStatus = "pending" | "public" | "hidden";

@@ -9,12 +9,12 @@ import {
   addCategoryToBoardgameController,
   getCategoriesForBoardgame,
   removeCategoryFromBoardgameController,
-  getBoardgamesForCategory,
-  likeCategory,
-  unlikeCategory,
+  likeCategoryController,
   getCategoryLikeCount,
   getUserLikedCategoriesController,
   getCategoryHistory,
+  toggleStatus,
+  unlikeCategoryController,
 } from "@/controllers/boardgame/boardgameCategoryController";
 import { validate, boardgameCategorySchema } from "@/validation/boardgameValidation";
 import { checkBoardgameOwner } from "@/middleware/boardgameMiddleware";
@@ -25,7 +25,7 @@ const router = Router();
 router.post("/add", AdminCheck, validate(boardgameCategorySchema), createNewCategory);
 
 // Get a category by ID
-router.get("/:categoryId", getCategory);
+router.get("/:categoryId", optionalToken, getCategory);
 
 // Update a category
 router.put("/:categoryId", AdminCheck, validate(boardgameCategorySchema), updateCategoryDetails);
@@ -33,37 +33,39 @@ router.put("/:categoryId", AdminCheck, validate(boardgameCategorySchema), update
 // Delete a category
 router.delete("/:categoryId", AdminCheck, deleteCategoryById);
 
+// Get all categories (optional: filter by user)
+router.get("/", optionalToken, getAllCategoryList);
 
 
-router.post("/:categoryId/like", verifyToken, likeCategory);
+
+
+router.post("/:categoryId/like", verifyToken, likeCategoryController);
 
 // ✅ Unlike category
-router.delete("/:categoryId/unlike", verifyToken, unlikeCategory);
+router.delete("/:categoryId/unlike", verifyToken, unlikeCategoryController);
 
 // ✅ Lấy số lượng like của category
 router.get("/:categoryId/likes", optionalToken ,getCategoryLikeCount);
 
+
+
+
 // ✅ Lấy danh sách category mà user đã like
 router.get("/liked-categories/:userId", getUserLikedCategoriesController);
 
+router.patch("/:categoryId/toggle-status", AdminCheck, toggleStatus);
 
 router.get("/:categoryId/history", AdminCheck, getCategoryHistory);
 
 
-
-// Get all categories (optional: filter by user)
-router.get("/", getAllCategoryList);
-
 // Add a category to a boardgame
-router.post("/boardgame/:gameId/add", checkBoardgameOwner, validate(boardgameCategorySchema) , addCategoryToBoardgameController);
+router.post("/boardgame/:gameId/add/:categoryId", checkBoardgameOwner, addCategoryToBoardgameController);
 
 // Get all categories for a specific boardgame
 router.get("/boardgame/:boardgameId", verifyToken, getCategoriesForBoardgame);
 
 // Remove a category from a boardgame
-router.delete("/remove-from-boardgame", verifyToken, removeCategoryFromBoardgameController);
+router.delete("/boardgame/:gameId/remove/:categoryId", checkBoardgameOwner, removeCategoryFromBoardgameController);
 
-// Get all boardgames associated with a specific category
-router.get("/boardgames/:categoryId", verifyToken, getBoardgamesForCategory);
 
 export default router;

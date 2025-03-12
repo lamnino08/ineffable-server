@@ -1,15 +1,20 @@
 import { Router } from "express";
-import { verifyToken, AdminCheck } from "@/middleware/auth";
+import { verifyToken, AdminCheck, optionalToken } from "@/middleware/auth";
 import {
   createNewMechanic,
   getMechanic,
   updateMechanicDetails,
   deleteMechanicById,
   getAllMechanicList,
+  getMechanicHistory,
   addMechanicToBoardgameController,
   getMechanicsForBoardgame,
   removeMechanicFromBoardgameController,
   getBoardgamesForMechanic,
+  toggleStatus,
+  likeMechanic,
+  unlikeMechanic,
+  checkUserLike,
 } from "@/controllers/boardgame/boardgameMechanicController";
 import { validate, boardgameMechanicSchema } from "@/validation/boardgameValidation";
 import { checkBoardgameOwner } from "@/middleware/boardgameMiddleware";
@@ -28,11 +33,25 @@ router.put("/:mechanicId", AdminCheck, validate(boardgameMechanicSchema), update
 // Delete a mechanic
 router.delete("/:mechanicId", AdminCheck, deleteMechanicById);
 
+router.patch("/:mechanicId/toggle-status", AdminCheck, toggleStatus);
+
 // Get all mechanics
-router.get("/", getAllMechanicList);
+router.get("/", optionalToken, getAllMechanicList);
+
+router.get("/:mechanicId/history", AdminCheck, getMechanicHistory);
+
+
+
+router.post("/:mechanicId/like", verifyToken, likeMechanic);
+
+// ✅ Unlike category
+router.delete("/:mechanicId/unlike", verifyToken, unlikeMechanic);
+
+router.get("/:mechanicId/check-like", optionalToken, checkUserLike);
+
 
 // Add a mechanic to a boardgame
-router.post("/boardgame/:gameId/add", checkBoardgameOwner, validate(boardgameMechanicSchema), addMechanicToBoardgameController);
+router.post("/boardgame/:gameId/add/:mechanicId", checkBoardgameOwner, addMechanicToBoardgameController);
 
 // Get all mechanics for a specific boardgame
 router.get("/boardgame/:boardgameId", verifyToken, getMechanicsForBoardgame);

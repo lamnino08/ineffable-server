@@ -5,6 +5,7 @@ import { checkOwnerBoardgame, getBoardgameOwner } from "@/services/redis/boardga
 import { RuleStatus } from "@/types/models/Boardgame";
 import { deleteRuleOwner, getRuleOwner, setRuleOwner } from "@/services/redis/rule";
 import { addRuleHistory } from "@/services/mongodb/history/RuleHistoryService";
+import { getUserNameById } from "@/models/userModel";
 
 export const AddRule = async (req: Request, res: Response) => {
   const gameId = req.params.gameId;
@@ -19,7 +20,7 @@ export const AddRule = async (req: Request, res: Response) => {
     const { title, language, link, type, description } = boardgameRuleSchema.parse(req.body);
 
     let status: RuleStatus = "pending";
-    if (await checkOwnerBoardgame(gameId, userId)) {
+    if (await checkOwnerBoardgame(Number(gameId), userId) || req.user.role === "admin") {
       status = "public";
     }
 
@@ -70,18 +71,36 @@ export const getARule = async (req: Request, res: Response) => {
 export const getByGameid = async (req: Request, res: Response) => {
   try {
     const gameId = req.params.gameId;
-    const rules = await GetRuleByGameId(gameId);
+    const { limit = 10, offset = 0, status } = req.query; // Lấy limit, offset và status từ query params
 
-    res.status(201).json({
+    // Chuyển đổi limit và offset về kiểu số nguyên
+    const parsedLimit = parseInt(limit as string, 10);
+    const parsedOffset = parseInt(offset as string, 10);
+
+    // Lấy danh sách rule từ DB với điều kiện status nếu có
+    const rules = await GetRuleByGameId(gameId, parsedLimit, parsedOffset, status as string);
+
+    const rulesWithUser = await Promise.all(
+      rules.map(async (rule) => {
+        const user = await getUserNameById(rule.user_id);
+        return {
+          ...rule,
+          username: user?.username || "",
+        };
+      })
+    );
+
+    res.status(200).json({
       success: true,
-      message: "Get a rules of game successfully",
-      data: rules
+      message: "Get rules of game successfully",
+      data: rulesWithUser
     });
   } catch (err) {
     console.error("Error get rule boardgame:", err);
     res.status(500).json({ error: "Internal server error" });
   }
-}
+};
+
 
 export const UpdateRule = async (req: Request, res: Response) => {
   const ruleId = req.params.ruleId;
@@ -102,7 +121,7 @@ export const UpdateRule = async (req: Request, res: Response) => {
     }
 
     const { boardgameId, userId: ruleOwnerId } = ruleOwnerInfo;
-    const boardgameOwnerId = await getBoardgameOwner(boardgameId.toString());
+    const boardgameOwnerId = await getBoardgameOwner(boardgameId);
 
     if (!boardgameOwnerId) {
       res.status(404).json({ error: "Boardgame not found." });
@@ -111,9 +130,9 @@ export const UpdateRule = async (req: Request, res: Response) => {
 
     // Kiểm tra quyền sửa rule
     const isRuleOwner = ruleOwnerId === userId;
-    const isBoardgameOwner = boardgameOwnerId === userId.toString();
+    const isBoardgameOwner = boardgameOwnerId === userId;
 
-    if (!isRuleOwner && !isBoardgameOwner) {
+    if (!isRuleOwner && !isBoardgameOwner && req.user.role !== "admin") {
       res.status(403).json({ error: "Forbidden. You don't have permission to update this rule." });
       return;
     }
@@ -176,16 +195,17 @@ export const TogglePublic = async (req: Request, res: Response) => {
     }
 
     const { boardgameId, userId: ruleOwnerId } = ruleOwnerInfo;
-    const boardgameOwnerId = await getBoardgameOwner(boardgameId.toString());
+    const boardgameOwnerId = await getBoardgameOwner(boardgameId);
 
     if (!boardgameOwnerId) {
       res.status(404).json({ error: "Boardgame not found." });
       return;
     }
 
-    const isBoardgameOwner = boardgameOwnerId === userId.toString();
+    console.log("boardgameOwnerId", boardgameOwnerId, userId);
+    const isBoardgameOwner = boardgameOwnerId === userId;
 
-    if (!isBoardgameOwner) {
+    if (!isBoardgameOwner && req.user.role !== "admin") {
       res.status(403).json({ error: "Forbidden. You don't have permission to update this rule." });
       return;
     }
@@ -206,15 +226,15 @@ export const TogglePublic = async (req: Request, res: Response) => {
       changes,
     });
 
-  res.status(201).json({
-    success: true,
-    message: req.t("boardgame.rule.add.success"),
-    data: null
-  });
-} catch (err) {
-  console.error("Error adding rule of boardgame:", err);
-  res.status(500).json({ error: "Internal server error" });
-}
+    res.status(201).json({
+      success: true,
+      message: req.t("boardgame.rule.add.success"),
+      data: null
+    });
+  } catch (err) {
+    console.error("Error adding rule of boardgame:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
 
 export const deleteRule = async (req: Request, res: Response) => {
@@ -236,16 +256,16 @@ export const deleteRule = async (req: Request, res: Response) => {
     }
 
     const { boardgameId, userId: ruleOwnerId } = ruleOwnerInfo;
-    const boardgameOwnerId = await getBoardgameOwner(boardgameId.toString());
+    const boardgameOwnerId = await getBoardgameOwner(boardgameId);
 
     if (!boardgameOwnerId) {
       res.status(404).json({ error: "Boardgame not found." });
       return;
     }
 
-    const isBoardgameOwner = boardgameOwnerId === userId.toString();
+    const isBoardgameOwner = boardgameOwnerId === userId;
 
-    if (!isBoardgameOwner) {
+    if (!isBoardgameOwner && req.user.role !== "admin") {
       res.status(403).json({ error: "Forbidden. You don't have permission to delete rule." });
       return;
     }

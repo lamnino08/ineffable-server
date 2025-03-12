@@ -12,6 +12,7 @@ import { checkOwnerBoardgame, getBoardgameOwner } from "@/services/redis/boardga
 import { RuleStatus, VideoStatus } from "@/types/models/Boardgame";
 import { deleteVideoOwner, getVideoOwner, setVideoOwner } from "@/services/redis/video";
 import { addVideoHistory } from "@/services/mongodb/history/BoardgameVideoHistoryService";
+import { getUserNameById } from "@/models/userModel";
 
 export const AddVideo = async (req: Request, res: Response) => {
   const gameId = req.params.gameId;
@@ -27,7 +28,7 @@ export const AddVideo = async (req: Request, res: Response) => {
     const { title, language, url, description } = boardgameVideoTutorialSchema.parse(req.body);
 
     let status: VideoStatus = "pending";
-    if (await checkOwnerBoardgame(gameId, userId)) {
+    if (await checkOwnerBoardgame(Number(gameId), userId)) {
       status = "public";
     }
 
@@ -75,19 +76,37 @@ export const getAVideo = async (req: Request, res: Response) => {
 
 export const getVideoTutorialsByGame = async (req: Request, res: Response) => {
   try {
-    const boardgame_id = req.params.gameId;
-    const videos = await getVideoTutorialsByGameId(Number(boardgame_id));
+    const gameId = req.params.gameId;
+    const { limit = 10, offset = 0, status } = req.query; // Lấy limit, offset và status từ query params
 
-    res.status(201).json({
+    // Chuyển đổi limit và offset về kiểu số nguyên
+    const parsedLimit = parseInt(limit as string, 10);
+    const parsedOffset = parseInt(offset as string, 10);
+
+    // Lấy danh sách video từ DB với điều kiện status nếu có
+    const videos = await getVideoTutorialsByGameId(Number(gameId), parsedLimit, parsedOffset, status as string);
+
+    const videosWithUser = await Promise.all(
+      videos.map(async (video) => {
+        const user = await getUserNameById(video.user_id);
+        return {
+          ...video,
+          username: user?.username || "",
+        };
+      })
+    );
+
+    res.status(200).json({
       success: true,
       message: "Video tutorials retrieved successfully.",
-      data: videos
+      data: videosWithUser
     });
   } catch (err) {
     console.error("Error retrieving video tutorials:", err);
     res.status(500).json({ error: "Internal server error" });
   }
-}
+};
+
 
 export const UpdateVideo = async (req: Request, res: Response) => {
   const video_id = Number(req.params.videoId);
@@ -108,7 +127,7 @@ export const UpdateVideo = async (req: Request, res: Response) => {
     }
 
     const { boardgameId, userId: videoOwnerId } = videoOwnerInfo;
-    const boardgameOwnerId = await getBoardgameOwner(boardgameId.toString());
+    const boardgameOwnerId = await getBoardgameOwner(boardgameId);
 
     if (!boardgameOwnerId) {
       res.status(404).json({ error: "Boardgame not found." });
@@ -116,9 +135,9 @@ export const UpdateVideo = async (req: Request, res: Response) => {
     }
 
     const isVideoOwner = videoOwnerId === userId;
-    const isBoardgameOwner = boardgameOwnerId === userId.toString();
+    const isBoardgameOwner = boardgameOwnerId === userId;
 
-    if (!isVideoOwner && !isBoardgameOwner) {
+    if (!isVideoOwner && !isBoardgameOwner && req.user.role !== "admin") {
       res.status(403).json({ error: "Forbidden. You don't have permission to update this video." });
       return;
     }
@@ -180,7 +199,7 @@ export const TogglePublic = async (req: Request, res: Response) => {
     }
 
     const { boardgameId, userId: videoOwnerId } = videoOwnerInfo;
-    const boardgameOwnerId = await getBoardgameOwner(boardgameId.toString());
+    const boardgameOwnerId = await getBoardgameOwner(boardgameId);
 
     if (!boardgameOwnerId) {
       res.status(404).json({ error: "Boardgame not found." });
@@ -188,9 +207,9 @@ export const TogglePublic = async (req: Request, res: Response) => {
     }
 
     const isVideoOwner = videoOwnerId === userId;
-    const isBoardgameOwner = boardgameOwnerId === userId.toString();
+    const isBoardgameOwner = boardgameOwnerId === userId;
 
-    if (!isBoardgameOwner && !isVideoOwner) {
+    if (!isBoardgameOwner && !isVideoOwner && req.user.role !== "admin") {
       res.status(403).json({ error: "Forbidden. You don't have permission to update this video." });
       return;
     }
@@ -241,7 +260,7 @@ export const DeleteVideo = async (req: Request, res: Response) => {
     }
 
     const { boardgameId, userId: videoOwnerId } = videoOwnerInfo;
-    const boardgameOwnerId = await getBoardgameOwner(boardgameId.toString());
+    const boardgameOwnerId = await getBoardgameOwner(boardgameId);
 
     if (!boardgameOwnerId) {
       res.status(404).json({ error: "Boardgame not found." });
@@ -249,9 +268,9 @@ export const DeleteVideo = async (req: Request, res: Response) => {
     }
 
     const isVideoOwner = videoOwnerId === userId;
-    const isBoardgameOwner = boardgameOwnerId === userId.toString();
+    const isBoardgameOwner = boardgameOwnerId === userId;
 
-    if (!isBoardgameOwner && !isVideoOwner) {
+    if (!isBoardgameOwner && !isVideoOwner && req.user.role !== "admin") {
       res.status(403).json({ error: "Forbidden. You don't have permission to update this video." });
       return;
     }

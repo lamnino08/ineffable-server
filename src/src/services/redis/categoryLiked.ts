@@ -31,6 +31,30 @@ export async function getLikeCount(categoryId: number) {
 }
 
 /**
+ * ✅ Fetch the like count for multiple categories at once
+ */
+export async function getListLikeCount(categoryIds: number[]) {
+    const redisClient = getRedis();
+    if (!redisClient) {
+        throw new Error("Redis client is not initialized");
+    }
+
+    if (categoryIds.length === 0) return {};
+
+    const pipline = redisClient.multi();
+    categoryIds.forEach(id =>pipline.sCard(`category_likes:${id}`));
+
+    const results = await pipline.exec();
+
+    const likeCountsMap: Record<number, number> = {};
+    categoryIds.forEach((id, index) => {
+        likeCountsMap[id] = Number(results[index]) || 0; // Default to 0 if not found
+    });
+
+    return likeCountsMap;
+}
+
+/**
  * ✅ Kiểm tra xem user có like category không
  */
 export async function hasUserLikedCategory(categoryId: number, userId: number): Promise<boolean> {

@@ -2,9 +2,14 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 
 // Define the interface for the history of a boardgame
 export interface BoardgameHistory {
-  action: "create" | "update" | "delete";
+  action: "create" | "update" | "delete" | "mapping";
   updated_by: number;
   changes?: Record<string, { oldValue: any; newValue: any }>;
+  mapping_details?: {
+    type: "category" | "mechanic"; 
+    item_id: number;
+    action: "add" | "remove";
+  };
   timestamp?: Date;
 }
 
@@ -21,7 +26,7 @@ const HistorySchema = new Schema<BoardgameHistory>(
   {
     action: {
       type: String,
-      enum: ["create", "update", "delete"],
+      enum: ["create", "update", "delete", "mapping"],
       required: true,
     },
     updated_by: {
@@ -30,6 +35,27 @@ const HistorySchema = new Schema<BoardgameHistory>(
     },
     changes: {
       type: Schema.Types.Mixed, 
+      required: false,
+    },
+    mapping_details: {
+      type: [
+        {
+          type: {
+            type: String,
+            enum: ["category", "mechanic"],
+            required: true,
+          },
+          item_id: {
+            type: Number,
+            required: true,
+          },
+          action: {
+            type: String,
+            enum: ["add", "remove"],
+            required: true,
+          },
+        },
+      ],
       required: false,
     },
     timestamp: {

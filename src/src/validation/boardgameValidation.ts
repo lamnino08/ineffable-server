@@ -54,6 +54,24 @@ export const boardgameUpdateDurationSchema = z.object({
     }
   );
 
+
+export const boardgameUpdateAgeSchema = z.object({
+  age: z
+    .string()
+    .min(1, { message: "Age is required" })
+    .regex(/^[0-9]+$/, { message: "Age must be a number" }),
+});
+
+export const boardgameUpdateWeightSchema = z.object({
+  weight: z
+    .string()
+    .min(1, { message: "Weight is required" })
+    .regex(/^[0-9]+(\.[0-9]{1})?$/, { message: "Weight must be a number (1-5)" })
+    .refine(value => parseFloat(value) >= 1 && parseFloat(value) <= 5, {
+      message: "Weight must be between 1 and 5",
+    }),
+});
+
 export const boardgameRuleSchema = z.object({
   title: z.string().min(1, { message: "Rule title is required" }),
   language: z.string().min(1, { message: "Language is required" }),
@@ -90,7 +108,7 @@ export const boardgameCategorySchema = z.object({
 });
 
 export const boardgameCategoryAddToSchema = z.object({
-  categoryId: z.number({invalid_type_error: "Category IDs must be numbers."})
+  categoryId: z.number({ invalid_type_error: "Category IDs must be numbers." })
 });
 
 export const boardgameMechanicSchema = z.object({
@@ -125,6 +143,8 @@ export const BoardgameRequestSchema = {
   updateBBGLink: { Schema: boardgameUpdateBGGLinkSchema },
   updateShortcut: { schema: boardgameUpdateShortcutSchema },
   updateDescription: { schema: boardgameUpdateDescriptionSchema },
+  updateAge: { schema: boardgameUpdateAgeSchema },
+  updateWeight: { schema: boardgameUpdateWeightSchema },
   updateNumberPlayers: { schema: boardgameUpdateNumberPlayersSchema },
   updateDuration: { schema: boardgameUpdateDurationSchema },
   uploadAvatar: { schema: boardgameUpdateImageSchema },

@@ -25,7 +25,7 @@ export const AddImage = async (req: Request, res: Response) => {
     const { images } = req.body;
 
     let status: ImageStatus = "pending";
-    if (await checkOwnerBoardgame(gameId, userId)) {
+    if (await checkOwnerBoardgame(Number(gameId), userId)) {
       status = "public";
     }
 
@@ -34,11 +34,6 @@ export const AddImage = async (req: Request, res: Response) => {
       setImageOwner(imageId, Number(gameId), userId);
     });
 
-    // images.array.forEach( async (image: any)  => {
-    //   const imageId = await addImage(Number(gameId), userId, image.url, status);
-    //   setImageOwner(imageId, Number(gameId), userId);
-    // });
-  
     res.status(201).json({
       success: true,
       message: req.t("boardgame.image.add.success"),
@@ -85,14 +80,14 @@ export const UpdateImageStatus = async (req: Request, res: Response) => {
     }
 
     const { boardgameId, userId: imageOwnerId } = imageOwnerInfo;
-    const boardgameOwnerId = await getBoardgameOwner(boardgameId.toString());
+    const boardgameOwnerId = await getBoardgameOwner(boardgameId);
 
     if (!boardgameOwnerId) {
       res.status(404).json({ error: "Boardgame not found." });
       return;
     }
 
-    const isBoardgameOwner = boardgameOwnerId === userId.toString();
+    const isBoardgameOwner = boardgameOwnerId === userId;
 
     if (!isBoardgameOwner && imageOwnerId !== userId) {
       res.status(403).json({ error: "Forbidden. You don't have permission to update this image." });
@@ -134,14 +129,14 @@ export const DeleteImage = async (req: Request, res: Response) => {
     }
 
     const { boardgameId, userId: imageOwnerId } = imageOwnerInfo;
-    const boardgameOwnerId = await getBoardgameOwner(boardgameId.toString());
+    const boardgameOwnerId = await getBoardgameOwner(boardgameId);
 
     if (!boardgameOwnerId) {
       res.status(404).json({ error: "Boardgame not found." });
       return;
     }
 
-    const isBoardgameOwner = boardgameOwnerId === userId.toString();
+    const isBoardgameOwner = boardgameOwnerId === userId;
 
     if (!isBoardgameOwner && imageOwnerId !== userId) {
       res.status(403).json({ error: "Forbidden. You don't have permission to delete this image." });

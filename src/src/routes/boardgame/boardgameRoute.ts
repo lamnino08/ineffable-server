@@ -11,18 +11,22 @@ import {
     updateDuration, 
     updateAvatar,
     updateBackground,
-    checkOwner
+    checkOwner,
+    updateAge,
+    updateWeight
 } from "@/controllers/boardgame/boardgameController";
 import { BoardgameRequestSchema, validate } from "@/validation/boardgameValidation";
-import { checkBoardgameOwner } from "@/middleware/boardgameMiddleware"
-import boardgameRuleRoute from "@/routes/boardgame/boardgameRuleRoute"
-import boardgameVideoRoute from "@/routes/boardgame/boardgameVideoRoute"
-import boardgameImageRoute from "@/routes/boardgame/boardgameImageRoute"
-import boardgameCategoryRoute from "@/routes/boardgame/boardgameCategoryRoute"
+import { checkBoardgameOwner } from "@/middleware/boardgameMiddleware";
+import boardgameRuleRoute from "@/routes/boardgame/boardgameRuleRoute";
+import boardgameVideoRoute from "@/routes/boardgame/boardgameVideoRoute";
+import boardgameImageRoute from "@/routes/boardgame/boardgameImageRoute";
+import boardgameCategoryRoute from "@/routes/boardgame/boardgameCategoryRoute";
+import boardgameMechanicRoute from "@/routes/boardgame/boardgameMechanicRoute";
 
 const router = Router();
 
 router.use("/category", boardgameCategoryRoute);
+router.use("/mechanic", boardgameMechanicRoute);
 router.use("/rules", boardgameRuleRoute);
 router.use("/videos", boardgameVideoRoute);
 router.use("/images", boardgameImageRoute);
@@ -92,6 +96,8 @@ router.patch("/:gameId/update/name", checkBoardgameOwner, validate(BoardgameRequ
 router.patch("/:gameId/update/BBGLink", checkBoardgameOwner, validate(BoardgameRequestSchema.updateBBGLink.Schema), updateBBGLink);
 router.patch("/:gameId/update/shortcut", checkBoardgameOwner, validate(BoardgameRequestSchema.updateShortcut.schema), updateShortcut);
 router.patch("/:gameId/update/description", checkBoardgameOwner, validate(BoardgameRequestSchema.updateDescription.schema), updateDescription);
+router.patch("/:gameId/update/age", checkBoardgameOwner, validate(BoardgameRequestSchema.updateAge.schema), updateAge);
+router.patch("/:gameId/update/weight", checkBoardgameOwner, validate(BoardgameRequestSchema.updateWeight.schema), updateWeight);
 router.patch("/:gameId/update/number-players", checkBoardgameOwner, validate(BoardgameRequestSchema.updateNumberPlayers.schema), updateNumberPlayers);
 router.patch("/:gameId/update/duration", checkBoardgameOwner, validate(BoardgameRequestSchema.updateDuration.schema), updateDuration);
 router.patch("/:gameId/update/avatar", checkBoardgameOwner, validate(BoardgameRequestSchema.uploadAvatar.schema), updateAvatar);

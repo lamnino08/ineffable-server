@@ -1,9 +1,12 @@
 import { Request, Response } from "express";
-import { addBoardgame, GetAvatar, Getbackground, getBoardgameDetails, UpdateAvatar, UpdateBackground, UpdateBBGLink, UpdateDescription, UpdateDuration, updateName, UpdateNumeberPlayers, UpdateShortcut } from "@/models/boardgame/boardgameModel";
+import { addBoardgame, getBoardgameDetails, updateAgeModel, UpdateAvatar, UpdateBackground, UpdateBBGLink, UpdateDescription, UpdateDuration, updateName, UpdateNumeberPlayers, UpdateShortcut, UpdateWeightModel } from "@/models/boardgame/boardgameModel";
 import fileHelper from "@/helpers/firebaseHelper";
 import { checkOwnerBoardgame, getBoardgameOwner, setBoardgameOwner } from "@/services/redis/boardgame"
 import jwt from "jsonwebtoken";
 import { addBoardgameHistory } from "@/services/mongodb/history/BoardgameHistoryService";
+import { boardgameUpdateAgeSchema, boardgameUpdateWeightSchema } from "@/validation/boardgameValidation";
+import { getBoardgameCategories } from "@/services/redis/boardgameCategory";
+import { getBoardgameMechanics } from "@/services/redis/boardgameMechanic";
 
 export const AddBoardgame = async (req: Request, res: Response) => {
   const { name, BBGLink } = req.body;
@@ -44,11 +47,12 @@ export const getABoardgame = async (req: Request, res: Response) => {
     let isOwner = false;
 
     if (user_id) {
-      isOwner = await checkOwnerBoardgame(gameId, user_id);
+      isOwner = await checkOwnerBoardgame(Number(gameId), user_id);
     }
 
-    const boardgame = await getBoardgameDetails(gameId, isOwner);
-
+    const boardgame = await getBoardgameDetails(Number(gameId));
+    if (boardgame) boardgame.categories = await getBoardgameCategories(Number(gameId));
+    if (boardgame) boardgame.mechanics = await getBoardgameMechanics(Number(gameId));
     res.status(201).json({
       success: true,
       message: "Get a boardgame successfully",
@@ -72,7 +76,7 @@ export const updateTitle = async (req: Request, res: Response) => {
 
     const userId = req.user?.id;
     if (userId) {
-      const gameOld = await getBoardgameDetails(gameId, false);
+      const gameOld = await getBoardgameDetails(Number(gameId));
       let changes: Record<string, { oldValue: any; newValue: any }> = {};
 
       changes.name = { oldValue: gameOld?.name, newValue: name };
@@ -84,6 +88,64 @@ export const updateTitle = async (req: Request, res: Response) => {
     }
 
     updateName(name, gameId); // mysql
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+export const updateAge = async (req: Request, res: Response) => {
+  try {
+    const gameId = req.params.gameId;
+    const { age } = boardgameUpdateAgeSchema.parse(req.body);
+
+    res.status(201).json({
+      success: true,
+      message: req.t("boardgame.update.name.success"),
+    });
+
+    const userId = req.user?.id;
+    if (userId) {
+      const gameOld = await getBoardgameDetails(Number(gameId));
+      let changes: Record<string, { oldValue: any; newValue: any }> = {};
+
+      changes.age = { oldValue: gameOld?.age, newValue: age };
+      addBoardgameHistory(Number(gameId), {
+        action: "update",
+        updated_by: userId,
+        changes
+      });
+    }
+
+    updateAgeModel(Number(age), gameId); // mysql
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+export const updateWeight = async (req: Request, res: Response) => {
+  try {
+    const gameId = req.params.gameId;
+    const { weight } = boardgameUpdateWeightSchema.parse(req.body);
+
+    res.status(201).json({
+      success: true,
+      message: req.t("boardgame.update.name.success"),
+    });
+
+    const userId = req.user?.id;
+    if (userId) {
+      const gameOld = await getBoardgameDetails(Number(gameId));
+      let changes: Record<string, { oldValue: any; newValue: any }> = {};
+
+      changes.weight = { oldValue: gameOld?.weight, newValue: weight };
+      addBoardgameHistory(Number(gameId), {
+        action: "update",
+        updated_by: userId,
+        changes
+      });
+    }
+
+    UpdateWeightModel(Number(weight), gameId); // mysql
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -102,7 +164,7 @@ export const updateBBGLink = async (req: Request, res: Response) => {
 
     const userId = req.user?.id;
     if (userId) {
-      const gameOld = await getBoardgameDetails(gameId, false);
+      const gameOld = await getBoardgameDetails(Number(gameId));
       let changes: Record<string, { oldValue: any; newValue: any }> = {};
 
       changes.boardgamegeek_url = { oldValue: gameOld?.boardgamegeek_url, newValue: BGGLink };
@@ -130,7 +192,7 @@ export const updateShortcut = async (req: Request, res: Response) => {
 
     const userId = req.user?.id;
     if (userId) {
-      const gameOld = await getBoardgameDetails(gameId, false);
+      const gameOld = await getBoardgameDetails(Number(gameId));
       let changes: Record<string, { oldValue: any; newValue: any }> = {};
 
       changes.shortcut = { oldValue: gameOld?.shortcut, newValue: shortcut };
@@ -159,7 +221,7 @@ export const updateDescription = async (req: Request, res: Response) => {
     UpdateDescription(description, gameId); //mysql
     const userId = req.user?.id;
     if (userId) {
-      const gameOld = await getBoardgameDetails(gameId, false);
+      const gameOld = await getBoardgameDetails(Number(gameId));
       let changes: Record<string, { oldValue: any; newValue: any }> = {};
 
       changes.description = { oldValue: gameOld?.description, newValue: description };
@@ -187,7 +249,7 @@ export const updateNumberPlayers = async (req: Request, res: Response) => {
 
     const userId = req.user?.id;
     if (userId) {
-      const gameOld = await getBoardgameDetails(gameId, false);
+      const gameOld = await getBoardgameDetails(Number(gameId));
       let changes: Record<string, { oldValue: any; newValue: any }> = {};
 
       changes.numberPlayer = {
@@ -226,7 +288,7 @@ export const updateDuration = async (req: Request, res: Response) => {
 
     const userId = req.user?.id;
     if (userId) {
-      const gameOld = await getBoardgameDetails(gameId, false);
+      const gameOld = await getBoardgameDetails(Number(gameId));
       let changes: Record<string, { oldValue: any; newValue: any }> = {};
 
       changes.numberPlayer = {
@@ -265,7 +327,7 @@ export const updateAvatar = async (req: Request, res: Response) => {
 
     const userId = req.user?.id;
     if (userId) {
-      const gameOld = await getBoardgameDetails(gameId, false);
+      const gameOld = await getBoardgameDetails(Number(gameId));
       let changes: Record<string, { oldValue: any; newValue: any }> = {};
 
       changes.avatar_url = { oldValue: gameOld?.avatar_url, newValue: url };
@@ -295,7 +357,7 @@ export const updateBackground = async (req: Request, res: Response) => {
 
     const userId = req.user?.id;
     if (userId) {
-      const gameOld = await getBoardgameDetails(gameId, false);
+      const gameOld = await getBoardgameDetails(Number(gameId));
       let changes: Record<string, { oldValue: any; newValue: any }> = {};
 
       changes.background_image_url = { oldValue: gameOld?.background_image_url, newValue: url };
@@ -349,7 +411,7 @@ export const checkOwner = async (req: Request, res: Response): Promise<void> => 
     }
 
     // Check if the user is the boardgame owner
-    const boardgameOwner = await getBoardgameOwner(gameId);
+    const boardgameOwner = await getBoardgameOwner(Number(gameId));
     const isOwner = boardgameOwner === decoded.id;
 
     res.status(200).json({

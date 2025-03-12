@@ -47,19 +47,34 @@ export const getVideoTutorialById = async (video_id: number): Promise<VideoTutor
   });
 };
 
-export const getVideoTutorialsByGameId = async (boardgame_id: number): Promise<VideoTutorial[]> => {
+export const getVideoTutorialsByGameId = async (
+  boardgame_id: number,
+  limit: number = 10,
+  offset: number = 0,
+  status?: string
+): Promise<VideoTutorial[]> => {
   return new Promise((resolve, reject) => {
-    const query = "SELECT * FROM video_tutorials WHERE boardgame_id = ?";
+    let query = `SELECT * FROM video_tutorials WHERE boardgame_id = ?`;
+    const params: any[] = [boardgame_id];
 
-    connection.query(query, [boardgame_id], (error, result: RowDataPacket[]) => {
+    if (status) {
+      query += ` AND status = ?`;
+      params.push(status);
+    }
+
+    query += ` LIMIT ? OFFSET ?`;
+    params.push(limit, offset);
+
+    connection.query(query, params, (error, result: RowDataPacket[]) => {
       if (error) {
-        console.error("Error retrieving video tutorials by game ID:", error);
+        console.error("❌ Error retrieving video tutorials by game ID:", error);
         return reject("Failed to retrieve video tutorials.");
       }
-      resolve(result.length > 0 ? (result as VideoTutorial[]) : []);
+      resolve(result as VideoTutorial[]);
     });
   });
 };
+
 
 export const updateVideoTutorial = async (
   video_id: number,

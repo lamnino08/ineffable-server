@@ -18,20 +18,13 @@ export const addBoardgame = async (name: string, user_id: number, BBGLink: strin
   });
 };
 
-export const getBoardgameDetails = async (boardgameId: string, isOwner: boolean): Promise<BoardgameDetails | null> => {
+export const getBoardgameDetails = async (boardgameId: number): Promise<BoardgameDetails | null> => {
   return new Promise((resolve, reject) => {
     const query = `
         SELECT 
-            b.*,
-            GROUP_CONCAT(DISTINCT c.name ORDER BY c.name SEPARATOR ', ') AS category_names,
-            GROUP_CONCAT(DISTINCT m.name ORDER BY m.name SEPARATOR ', ') AS mechanic_names
-        FROM boardgames b
-        LEFT JOIN category_of_boardgame cob ON b.boardgame_id = cob.boardgame_id
-        LEFT JOIN boardgame_categories c ON cob.category_id = c.category_id
-        LEFT JOIN mechanic_of_boardgame mob ON b.boardgame_id = mob.boardgame_id
-        LEFT JOIN boardgame_mechanic m ON mob.mechanic_id = m.mechanic_id
-        WHERE b.boardgame_id = ?
-        GROUP BY b.boardgame_id;
+            *
+        FROM boardgames
+        WHERE boardgame_id = ?
       `;
 
     connection.query(query, [boardgameId], (error, results: RowDataPacket[]) => {
@@ -44,43 +37,14 @@ export const getBoardgameDetails = async (boardgameId: string, isOwner: boolean)
         return resolve(null);
       }
 
-      const boardgame = results[0];
+      const boardgame = results[0] as BoardgameDetails;
 
-      try {
-        const details: BoardgameDetails = {
-          isOwner: isOwner,
-          boardgame_id: boardgame.boardgame_id,
-          name: boardgame.name,
-          description: boardgame.description,
-          shortcut: boardgame.shortcut,
-          genre: boardgame.genre,
-          age_group: boardgame.age_group,
-          min_players: boardgame.min_players,
-          max_players: boardgame.max_players,
-          min_play_time: boardgame.min_play_time,
-          max_play_time: boardgame.max_play_time,
-          complexity_rating: boardgame.complexity_rating,
-          avatar_url: boardgame.avatar_url,
-          background_image_url: boardgame.background_image_url,
-          boardgamegeek_url: boardgame.boardgamegeek_url,
-          is_approved: !!boardgame.is_approved,
-          created_by: boardgame.created_by,
-          created_at: boardgame.created_at,
-          updated_at: boardgame.updated_at,
-          categories: boardgame.category_ids ? boardgame.category_ids.split(",") : [],
-          mechanics: boardgame.mechanic_ids ? boardgame.mechanic_ids.split(",") : [],
-        };
-
-        resolve(details);
-      } catch (parseError) {
-        console.error("Error parsing boardgame details:", parseError);
-        reject("Failed to parse boardgame details.");
-      }
+      resolve(boardgame);
     });
   });
 };
 
-export const GetAvatar = async (gameId: string): Promise<string | null> => {
+export const GetAvatar = async (gameId: number): Promise<string | null> => {
   return new Promise((resolve, reject) => {
     const query: string = "SELECT avatar_url FROM boardgames WHERE boardgame_id = ?";
 
@@ -99,7 +63,7 @@ export const GetAvatar = async (gameId: string): Promise<string | null> => {
   });
 };
 
-export const Getbackground = async (gameId: string): Promise<string | null> => {
+export const Getbackground = async (gameId: number): Promise<string | null> => {
   return new Promise((resolve, reject) => {
     const query: string = "SELECT background_image_url FROM boardgames WHERE boardgame_id = ?";
 
@@ -232,6 +196,44 @@ export const UpdateDuration = async (min_time: string, max_time: string, gameId:
   });
 };
 
+export const updateAgeModel = async (age: number, gameId: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const query: string = "UPDATE boardgames SET age = ? WHERE boardgame_id = ?";
+
+    connection.query(query, [age, gameId], (error, result: ResultSetHeader) => {
+      if (error) {
+        console.error("Error updating boardgame name:", error);
+        return reject("Failed to update the boardgame name");
+      }
+
+      if (result.affectedRows === 0) {
+        return reject("No boardgame found with the given ID");
+      }
+
+      resolve();
+    });
+  });
+};
+
+export const UpdateWeightModel = async (weight: number, gameId: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const query: string = "UPDATE boardgames SET weight = ? WHERE boardgame_id = ?";
+
+    connection.query(query, [weight, gameId], (error, result: ResultSetHeader) => {
+      if (error) {
+        console.error("Error updating boardgame name:", error);
+        return reject("Failed to update the boardgame name");
+      }
+
+      if (result.affectedRows === 0) {
+        return reject("No boardgame found with the given ID");
+      }
+
+      resolve();
+    });
+  });
+};
+
 export const UpdateAvatar = async (url: string, gameId: string): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query: string = "UPDATE boardgames SET avatar_url = ? WHERE boardgame_id = ?";
@@ -269,4 +271,3 @@ export const UpdateBackground = async (url: string, gameId: string): Promise<voi
     });
   });
 };
-

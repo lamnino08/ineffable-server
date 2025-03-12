@@ -5,19 +5,34 @@ import {
   updateCategory,
   deleteCategory,
   getAllCategories,
-  addCategoryToBoardgame,
   getCategoriesByBoardgame,
   removeCategoryFromBoardgame,
   getBoardgamesByCategory,
+  updateStatus,
+  likeCategory,
+  unlikeCategory,
 } from "@/models/boardgame/boardgameCategoryModel";
+
+import {
+  addCategoryToGame,
+  getAllCategoryLikeCounts,
+  getBoardgameCategories,
+  likeCategoryAction,
+  removeCategoryFromGame,
+  unlikeCategoryAction
+} from "@/services/redis/boardgameCategory"
 import { Role } from "@/types/Enum/Role";
 import { Status } from "@/types/Enum/Status";
 import { getAllBoardgameCounts, getBoardgameCount } from "@/services/redis/boardgameCategory";
-import { addCategoryToUserLikes, getUserLikedCategories, removeCategoryFromUserLikes } from "@/services/mongodb/like/categoryLike";
-import { addLikeToCategory, getLikeCount, hasUserLikedCategory, removeLikeFromCategory } from "@/services/redis/categoryLiked";
+import { getUserLikedCategories } from "@/services/mongodb/like/categoryLike";
+import { addLikeToCategory, getLikeCount, getListLikeCount, hasUserLikedCategory, removeLikeFromCategory } from "@/services/redis/categoryLiked";
 import { CategoryHistory } from "@/models/history/CategoryHistoryModel";
 import { addCategoryHistory, getCategoryHistories } from "@/services/mongodb/history/CategoryHistoryService";
 import { getUserNameById } from "@/models/userModel";
+import { BoardgameCategory } from "@/types/models/Boardgame";
+import { BoardgameHistory } from "@/models/history/BoargameHistoryModel";
+import { addBoardgameHistory } from "@/services/mongodb/history/BoardgameHistoryService";
+import { console } from "inspector";
 // Create a new category
 export const createNewCategory = async (req: Request, res: Response): Promise<void> => {
   const { name, description, img_url } = req.body;
@@ -94,12 +109,14 @@ export const updateCategoryDetails = async (req: Request, res: Response) => {
   const { name, description, img_url } = req.body;
 
   try {
+    //1. get old version of category
     const category = await getCategoryById(Number(categoryId));
     if (!category) {
       res.status(404).json({ error: "Category not found" });
       return;
     }
 
+    // 2. detect changes
     const changes: Record<string, { oldValue: any; newValue: any }> = {};
 
     if (name && name !== category.name) {
@@ -112,12 +129,60 @@ export const updateCategoryDetails = async (req: Request, res: Response) => {
       changes["img_url"] = { oldValue: category.img_url, newValue: img_url };
     }
 
+    // 3. update category
     await updateCategory(Number(categoryId), name, description, img_url);
     res.status(200).json({
       success: true,
       message: "Category updated successfully",
     });
 
+    // 4. add history
+    if (req.user) {
+      if (Object.keys(changes).length > 0) {
+        const history: CategoryHistory = {
+          action: "update",
+          updated_by: req.user.id,
+          changes,
+        };
+        await addCategoryHistory(Number(categoryId), history);
+      }
+    }
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update category" });
+  }
+};
+
+// Update a category
+export const toggleStatus = async (req: Request, res: Response) => {
+  const { categoryId } = req.params;
+
+  try {
+    // 1. get old version of category
+    const category = await getCategoryById(Number(categoryId));
+    if (!category) {
+      res.status(404).json({ error: "Category not found" });
+      return;
+    }
+
+    // 2. store change
+    const oldStatus = category.status;
+    const newStatus = oldStatus === Status.PUBLIC ? Status.HIDE : Status.PUBLIC;
+
+    const changes: Record<string, { oldValue: any; newValue: any }> = {};
+    changes["status"] = { oldValue: oldStatus, newValue: newStatus };
+
+    // 3. update category
+    await updateStatus(Number(categoryId), newStatus);
+
+    // 4. response
+    res.status(200).json({
+      success: true,
+      message: "Category updated successfully",
+    });
+
+    // 5. add history
     if (req.user) {
       if (Object.keys(changes).length > 0) {
         const history: CategoryHistory = {
@@ -153,25 +218,22 @@ export const deleteCategoryById = async (req: Request, res: Response) => {
 
 // Get all categories (optional: filter by user_id)
 export const getAllCategoryList = async (req: Request, res: Response) => {
-  const userId = req.user?.id;
-
   const filters = {
     status: req.query.status as string,
     search: req.query.search as string,
   };
-  const pagination = {
-    limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
-    offset: req.query.offset ? parseInt(req.query.offset as string, 10) : undefined,
-  };
 
   try {
-    const categories = await getAllCategories(userId, filters, pagination);
+    console.log("HEre");
+    const categories = await getAllCategories(filters);
 
     const gameCounts = await getAllBoardgameCounts();
 
+    const likeCounts = await getAllCategoryLikeCounts();
     const categoriesWithGameCount = categories.map(category => ({
       ...category,
       game_count: gameCounts[category.category_id] || 0,
+      like_count: likeCounts[category.category_id] || 0,
     }));
 
     res.status(200).json({
@@ -186,18 +248,16 @@ export const getAllCategoryList = async (req: Request, res: Response) => {
 };
 
 
-
 /**
  * ✅ Like category
  * @route POST /api/category/like
  */
-export const likeCategory = async (req: Request, res: Response) => {
+export const likeCategoryController = async (req: Request, res: Response) => {
   try {
     const { categoryId } = req.params;
 
     if (req.user) {
-      await addLikeToCategory(Number(categoryId), req.user.id); //redis
-      await addCategoryToUserLikes(req.user.id, Number(categoryId)); // mongodb
+      await likeCategoryAction(req.user.id, Number(categoryId));
     }
 
     res.status(200).json({ success: true, message: "Category liked successfully" });
@@ -211,13 +271,12 @@ export const likeCategory = async (req: Request, res: Response) => {
 * ✅ Unlike category
 * @route DELETE /api/category/unlike
 */
-export const unlikeCategory = async (req: Request, res: Response) => {
+export const unlikeCategoryController = async (req: Request, res: Response) => {
   try {
     const { categoryId } = req.params;
 
     if (req.user) {
-      await removeLikeFromCategory(Number(categoryId), req.user.id);
-      await removeCategoryFromUserLikes(req.user.id, Number(categoryId));
+      await unlikeCategoryAction(req.user.id, Number(categoryId));
     }
 
     res.status(200).json({ success: true, message: "Category unliked successfully" });
@@ -313,9 +372,9 @@ export const getCategoryHistory = async (req: Request, res: Response) => {
           timestamp: history.timestamp,
           updated_by: user
             ? {
-                id: history.updated_by,
-                username: user.username,
-              }
+              id: history.updated_by,
+              username: user.username,
+            }
             : null,
         };
       })
@@ -333,69 +392,92 @@ export const getCategoryHistory = async (req: Request, res: Response) => {
 };
 
 
-
 // Add a category to a boardgame
 export const addCategoryToBoardgameController = async (req: Request, res: Response): Promise<void> => {
-  const gameId = req.params.gameId;
-  const { categoryId } = req.body;
+  const { gameId, categoryId } = req.params;
 
   try {
-    await addCategoryToBoardgame(Number(gameId), categoryId);
-
+    await addCategoryToGame(Number(gameId), Number(categoryId));
     res.status(201).json({
       success: true,
       message: "Categories added to boardgame successfully",
     });
-  } catch (err) {
-    console.error("Error adding categories to boardgame:", err);
-    res.status(500).json({ error: "Failed to add categories to boardgame" });
-  }
-};
+    if (req.user) {
+      const history: BoardgameHistory = {
+        action: "mapping",
+        updated_by: req.user.id,
+        mapping_details: {
+          type: "category",
+          item_id: Number(categoryId),
+          action: "add",
+        }
+      }
+      await addBoardgameHistory(Number(gameId), history);
+    }
+    } catch (err) {
+      console.error("Error adding categories to boardgame:", err);
+      res.status(500).json({ error: "Failed to add categories to boardgame" });
+    }
+  };
 
-// Get all categories for a boardgame
-export const getCategoriesForBoardgame = async (req: Request, res: Response) => {
-  const { boardgameId } = req.params;
+  // Get all categories for a boardgame
+  export const getCategoriesForBoardgame = async (req: Request, res: Response) => {
+    const { boardgameId } = req.params;
+    console.log(boardgameId);
 
-  try {
-    const categories = await getCategoriesByBoardgame(Number(boardgameId));
-    res.status(200).json({
-      success: true,
-      data: categories,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch categories for boardgame" });
-  }
-};
+    try {
+      const categories = await getBoardgameCategories(Number(boardgameId));
+      console.log(categories);
+      res.status(200).json({
+        success: true,
+        data: categories,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to fetch categories for boardgame" });
+    }
+  };
 
-// Remove a category from a boardgame
-export const removeCategoryFromBoardgameController = async (req: Request, res: Response) => {
-  const { boardgameId, categoryId } = req.body;
+  // Remove a category from a boardgame
+  export const removeCategoryFromBoardgameController = async (req: Request, res: Response) => {
+    const { gameId, categoryId } = req.params;
 
-  try {
-    await removeCategoryFromBoardgame(boardgameId, categoryId);
-    res.status(200).json({
-      success: true,
-      message: "Category removed from boardgame successfully",
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to remove category from boardgame" });
-  }
-};
+    try {
+      await removeCategoryFromGame(Number(gameId), Number(categoryId));
+      if (req.user) {
+        const history: BoardgameHistory = {
+          action: "mapping",
+          updated_by: req.user.id,
+          mapping_details: {
+            type: "category",
+            item_id: Number(categoryId),
+            action: "remove",
+          }
+        }
+        await addBoardgameHistory(Number(gameId), history);
+      }
+      res.status(200).json({
+        success: true,
+        message: "Category removed from boardgame successfully",
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to remove category from boardgame" });
+    }
+  };
 
-// Get all boardgames associated with a category
-export const getBoardgamesForCategory = async (req: Request, res: Response) => {
-  const { categoryId } = req.params;
+  // Get all boardgames associated with a category
+  export const getBoardgamesForCategory = async (req: Request, res: Response) => {
+    const { categoryId } = req.params;
 
-  try {
-    const boardgames = await getBoardgamesByCategory(Number(categoryId));
-    res.status(200).json({
-      success: true,
-      data: boardgames,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch boardgames for category" });
-  }
-};
+    try {
+      const boardgames = await getBoardgamesByCategory(Number(categoryId));
+      res.status(200).json({
+        success: true,
+        data: boardgames,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to fetch boardgames for category" });
+    }
+  };

@@ -42,20 +42,35 @@ export const GetRuleById = async (ruleId: string): Promise<Rule | null> => {
   });
 };
 
-export const GetRuleByGameId = async (boardgame_id: string): Promise<Rule[]> => {
+export const GetRuleByGameId = async (
+  boardgame_id: string,
+  limit: number = 10,
+  offset: number = 0,
+  status?: string
+): Promise<Rule[]> => {
   return new Promise((resolve, reject) => {
-    const query: string = "SELECT * FROM boardgame_rules WHERE boardgame_id = ?";
+    let query = `SELECT * FROM boardgame_rules WHERE boardgame_id = ?`;
+    const params: any[] = [boardgame_id];
 
-    connection.query(query, [boardgame_id], (error, result: RowDataPacket[]) => {
+    if (status) {
+      query += ` AND status = ?`;
+      params.push(status);
+    }
+
+    query += ` LIMIT ? OFFSET ?`;
+    params.push(limit, offset);
+
+    connection.query(query, params, (error, results: RowDataPacket[]) => {
       if (error) {  
-        console.error("Error getting rule by id:", error);
+        console.error("❌ Error getting rules by boardgame ID:", error);
         return reject("Failed to retrieve the rules of the boardgame");
       }
 
-      resolve(result.length > 0 ? (result as Rule[]) : []); 
+      resolve(results as Rule[]);
     });
   });
 };
+
 
 export const updateARule = async (
   ruleId: number,

@@ -2,14 +2,15 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getUserByEmail, createUser, getUserById } from '@/models/userModel';
-import { 
-  isEmailRegistered, 
-  hashEmail, 
-  hashPassword, 
-  markEmailAsRegistered, 
-  isUsernameRegistered, 
-  markUsernameAsRegistered 
- } from '@/services/redis/auth'
+import {
+  isEmailRegistered,
+  hashEmail,
+  hashPassword,
+  markEmailAsRegistered,
+  isUsernameRegistered,
+  markUsernameAsRegistered
+} from '@/services/redis/auth'
+import { date } from 'zod';
 // Handle user sign-up
 export const handleSignUp = async (req: Request, res: Response): Promise<Response> => {
   try {
@@ -63,10 +64,12 @@ export const handleLogin = async (req: Request, res: Response): Promise<Response
     });
 
     return res.json({
-      token,
-      email: email,
-      username: user.username,
-      role: user.role,
+      data: {
+        token,
+        email: email,
+        username: user.username,
+        role: user.role,
+      }
     });
   } catch (error) {
     console.log("[Login]", error);
@@ -89,10 +92,10 @@ export const validateToken = async (req: Request, res: Response): Promise<Respon
           isAuthenticated: false,
         }
       });
-      
+
     }
 
-    const decoded : any = jwt.verify(token, process.env.JWT_SECRET!);
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
 
     const user = await getUserById(decoded.id);
 

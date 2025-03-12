@@ -8,6 +8,7 @@ import { Boardgame, BoardgameHistory } from "@/models/history/BoargameHistoryMod
 export const addBoardgameHistory = async (
   boardgameId: number,
   history: BoardgameHistory
+
 ): Promise<void> => {
   // Check if the boardgame document already exists
   const boardgame = await Boardgame.findOne({ boardgame_id: boardgameId });
@@ -20,8 +21,6 @@ export const addBoardgameHistory = async (
     return;
   }
 
-  // Append the new history entry and save
-  console.log(boardgame);
   boardgame.histories.push(history);
   await boardgame.save();
 };
@@ -32,8 +31,22 @@ export const addBoardgameHistory = async (
  * @returns Array of history entries or an empty array if no history exists.
  */
 export const getBoardgameHistories = async (
-  boardgameId: number
+  boardgameId: number,
+  filters: { 
+    action?: "create" | "update" | "delete" | "mapping",
+    user_id?: number
+  },
+  pagination: { limit?: number, offset?: number}
 ): Promise<BoardgameHistory[]> => {
+  let query: any = { boardgame_id: boardgameId };
+
+  if (filters?.action) {
+    query["histories.action"] = filters.action; // Filter by action type
+  }
+  if (filters?.user_id) {
+    query["histories.updated_by"] = filters.user_id; // Filter by user ID
+  }
+
   const boardgame = await Boardgame.findOne({ boardgame_id: boardgameId });
   return boardgame?.histories || [];
 };
