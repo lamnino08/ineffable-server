@@ -14,6 +14,7 @@ import swaggerDocs from "@/config/swagger"
 import { initRedis } from "@/config/database/redis";
 import connectMongoDB  from "@/config/database/mongoDb"
 import { i18nMiddleware } from "./middleware/i18nMiddlware";
+import { checkElasticsearchConnection } from "./config/database/elasticsearch";
 
 
 const app = express();
@@ -38,6 +39,7 @@ connectMongoDB();
 
 // i18n language
 app.use(i18nMiddleware);
+checkElasticsearchConnection();
 
 // Routes
 app.use("/auth", authRoute);

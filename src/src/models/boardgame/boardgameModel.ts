@@ -82,7 +82,7 @@ export const Getbackground = async (gameId: number): Promise<string | null> => {
   });
 };
 
-export const updateName = async (name: string, gameId: string): Promise<void> => {
+export const updateName = async (name: number, gameId: string): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query: string = "UPDATE boardgames SET name = ? WHERE boardgame_id = ?";
 
@@ -101,7 +101,7 @@ export const updateName = async (name: string, gameId: string): Promise<void> =>
   });
 };
 
-export const UpdateBBGLink = async (bbgLink: string, gameId: string): Promise<void> => {
+export const UpdateBBGLink = async (bbgLink: string, gameId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query: string = "UPDATE boardgames SET boardgamegeek_url = ? WHERE boardgame_id = ?";
 
@@ -120,7 +120,7 @@ export const UpdateBBGLink = async (bbgLink: string, gameId: string): Promise<vo
   });
 };
 
-export const UpdateShortcut = async (shortcut: string, gameId: string): Promise<void> => {
+export const UpdateShortcut = async (shortcut: string, gameId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query: string = "UPDATE boardgames SET shortcut = ? WHERE boardgame_id = ?";
 
@@ -139,7 +139,7 @@ export const UpdateShortcut = async (shortcut: string, gameId: string): Promise<
   });
 };
 
-export const UpdateDescription = async (description: string, gameId: string): Promise<void> => {
+export const UpdateDescription = async (description: string, gameId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query: string = "UPDATE boardgames SET description = ? WHERE boardgame_id = ?";
 
@@ -158,7 +158,7 @@ export const UpdateDescription = async (description: string, gameId: string): Pr
   });
 };
 
-export const UpdateNumeberPlayers = async (minPlayers: string, maxPlayers: string, gameId: string): Promise<void> => {
+export const UpdateNumeberPlayers = async (minPlayers: number, maxPlayers: number, gameId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query: string = "UPDATE boardgames SET min_players = ?, max_players = ? WHERE boardgame_id = ?";
 
@@ -177,7 +177,7 @@ export const UpdateNumeberPlayers = async (minPlayers: string, maxPlayers: strin
   });
 };
 
-export const UpdateDuration = async (min_time: string, max_time: string, gameId: string): Promise<void> => {
+export const UpdateDuration = async (min_time: number, max_time: number, gameId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query: string = "UPDATE boardgames SET min_play_time = ?, max_play_time = ? WHERE boardgame_id = ?";
 
@@ -196,7 +196,7 @@ export const UpdateDuration = async (min_time: string, max_time: string, gameId:
   });
 };
 
-export const updateAgeModel = async (age: number, gameId: string): Promise<void> => {
+export const updateAgeModel = async (age: number, gameId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query: string = "UPDATE boardgames SET age = ? WHERE boardgame_id = ?";
 
@@ -215,7 +215,7 @@ export const updateAgeModel = async (age: number, gameId: string): Promise<void>
   });
 };
 
-export const UpdateWeightModel = async (weight: number, gameId: string): Promise<void> => {
+export const UpdateWeightModel = async (weight: number, gameId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query: string = "UPDATE boardgames SET weight = ? WHERE boardgame_id = ?";
 
@@ -234,7 +234,7 @@ export const UpdateWeightModel = async (weight: number, gameId: string): Promise
   });
 };
 
-export const UpdateAvatar = async (url: string, gameId: string): Promise<void> => {
+export const UpdateAvatar = async (url: string, gameId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query: string = "UPDATE boardgames SET avatar_url = ? WHERE boardgame_id = ?";
 
@@ -253,7 +253,7 @@ export const UpdateAvatar = async (url: string, gameId: string): Promise<void> =
   });
 };
 
-export const UpdateBackground = async (url: string, gameId: string): Promise<void> => {
+export const UpdateBackground = async (url: string, gameId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query: string = "UPDATE boardgames SET background_image_url = ? WHERE boardgame_id = ?";
 

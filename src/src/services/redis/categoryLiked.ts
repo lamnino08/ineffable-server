@@ -1,12 +1,5 @@
 import { getRedis } from "@/config/database/redis";
-
-export async function addLikeToCategory(categoryId: number, userId: number) {
-    const redisClient = getRedis();
-    if (!redisClient) {
-        throw new Error("Redis client is not initialized");
-    }
-    return await redisClient.sAdd(`category_likes:${categoryId}`, userId.toString());
-}
+import { getCategorylikesCount } from "@/models/boardgame/boardgameCategoryModel";
 
 /**
  * ✅ Xóa user khỏi danh sách like của category
@@ -19,16 +12,8 @@ export async function removeLikeFromCategory(categoryId: number, userId: number)
     return await redisClient.sRem(`category_likes:${categoryId}`, userId.toString());
 }
 
-/**
- * ✅ Lấy số lượng user đã like category
- */
-export async function getLikeCount(categoryId: number) {
-    const redisClient = getRedis();
-    if (!redisClient) {
-        throw new Error("Redis client is not initialized");
-    }
-    return await redisClient.sCard(`category_likes:${categoryId}`);
-}
+
+
 
 /**
  * ✅ Fetch the like count for multiple categories at once

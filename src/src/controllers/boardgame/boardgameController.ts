@@ -1,12 +1,13 @@
 import { Request, Response } from "express";
 import { addBoardgame, getBoardgameDetails, updateAgeModel, UpdateAvatar, UpdateBackground, UpdateBBGLink, UpdateDescription, UpdateDuration, updateName, UpdateNumeberPlayers, UpdateShortcut, UpdateWeightModel } from "@/models/boardgame/boardgameModel";
 import fileHelper from "@/helpers/firebaseHelper";
-import { checkOwnerBoardgame, getBoardgameOwner, setBoardgameOwner } from "@/services/redis/boardgame"
+import { boardgameUpdateAge, boardgameUpdateAvatar, boardgameUpdateBackground, boardgameUpdateBGGLink, boardgameUpdateDescription, boardgameUpdateDuration, boardgameUpdateNumberPlayers, boardgameUpdateShortcut, boardgameUpdateTitle, boardgameUpdateWeight, checkOwnerBoardgame, deleteBoardgameDetailFromRedis, getBoardgameDetailByID, getBoardgameOwner, setBoardgameOwner } from "@/services/redis/boardgame"
 import jwt from "jsonwebtoken";
 import { addBoardgameHistory } from "@/services/mongodb/history/BoardgameHistoryService";
 import { boardgameUpdateAgeSchema, boardgameUpdateWeightSchema } from "@/validation/boardgameValidation";
 import { getBoardgameCategories } from "@/services/redis/boardgameCategory";
 import { getBoardgameMechanics } from "@/services/redis/boardgameMechanic";
+import { number } from "zod";
 
 export const AddBoardgame = async (req: Request, res: Response) => {
   const { name, BBGLink } = req.body;
@@ -50,8 +51,13 @@ export const getABoardgame = async (req: Request, res: Response) => {
       isOwner = await checkOwnerBoardgame(Number(gameId), user_id);
     }
 
-    const boardgame = await getBoardgameDetails(Number(gameId));
+    // 1. get common boardgame details
+    const boardgame = await getBoardgameDetailByID(Number(gameId));
+
+    // 2. get boardgame categories
     if (boardgame) boardgame.categories = await getBoardgameCategories(Number(gameId));
+
+    // 3. get boardgame mechanics
     if (boardgame) boardgame.mechanics = await getBoardgameMechanics(Number(gameId));
     res.status(201).json({
       success: true,
@@ -66,313 +72,282 @@ export const getABoardgame = async (req: Request, res: Response) => {
 
 export const updateTitle = async (req: Request, res: Response) => {
   try {
+    // 1. Lấy gameId từ request params
     const gameId = req.params.gameId;
+
+    // 2. Lấy name từ request body
     const { name } = req.body;
 
+    // 3. Trả về response thành công ngay lập tức
     res.status(201).json({
       success: true,
       message: req.t("boardgame.update.name.success"),
     });
 
+    // 4. Lấy userId từ request (nếu có)
     const userId = req.user?.id;
+
+    // 5. Nếu có userId, ghi lại lịch sử cập nhật
     if (userId) {
-      const gameOld = await getBoardgameDetails(Number(gameId));
-      let changes: Record<string, { oldValue: any; newValue: any }> = {};
-
-      changes.name = { oldValue: gameOld?.name, newValue: name };
-      addBoardgameHistory(Number(gameId), {
-        action: "update",
-        updated_by: userId,
-        changes
-      });
+      await boardgameUpdateTitle(Number(gameId), name, userId);
     }
-
-    updateName(name, gameId); // mysql
   } catch (err) {
+    // 8. Xử lý lỗi nếu có
     res.status(500).json({ error: "Internal server error" });
   }
-}
+};
 
 export const updateAge = async (req: Request, res: Response) => {
   try {
+    // 1. Lấy gameId từ request params
     const gameId = req.params.gameId;
+
+    // 2. Lấy age từ request body (validate bằng schema)
     const { age } = boardgameUpdateAgeSchema.parse(req.body);
 
+    // 3. Trả về response thành công ngay lập tức
     res.status(201).json({
       success: true,
-      message: req.t("boardgame.update.name.success"),
+      message: req.t("boardgame.update.age.success"),
     });
 
+    // 4. Lấy userId từ request (nếu có)
     const userId = req.user?.id;
+
+    // 5. Nếu có userId, gọi hàm cập nhật `age`
     if (userId) {
-      const gameOld = await getBoardgameDetails(Number(gameId));
-      let changes: Record<string, { oldValue: any; newValue: any }> = {};
-
-      changes.age = { oldValue: gameOld?.age, newValue: age };
-      addBoardgameHistory(Number(gameId), {
-        action: "update",
-        updated_by: userId,
-        changes
-      });
+      await boardgameUpdateAge(Number(gameId), Number(age), userId);
     }
-
-    updateAgeModel(Number(age), gameId); // mysql
   } catch (err) {
+    // 6. Xử lý lỗi nếu có
+    console.error("Error updating age boardgame:", err);
     res.status(500).json({ error: "Internal server error" });
   }
-}
+};
 
 export const updateWeight = async (req: Request, res: Response) => {
   try {
+    // 1. Lấy gameId từ request params
     const gameId = req.params.gameId;
+
+    // 2. Lấy weight từ request body (validate bằng schema)
     const { weight } = boardgameUpdateWeightSchema.parse(req.body);
 
+    // 3. Trả về response thành công ngay lập tức
     res.status(201).json({
       success: true,
-      message: req.t("boardgame.update.name.success"),
+      message: req.t("boardgame.update.weight.success"),
     });
 
+    // 4. Lấy userId từ request (nếu có)
     const userId = req.user?.id;
+
+    // 5. Nếu có userId, gọi hàm cập nhật `weight`
     if (userId) {
-      const gameOld = await getBoardgameDetails(Number(gameId));
-      let changes: Record<string, { oldValue: any; newValue: any }> = {};
-
-      changes.weight = { oldValue: gameOld?.weight, newValue: weight };
-      addBoardgameHistory(Number(gameId), {
-        action: "update",
-        updated_by: userId,
-        changes
-      });
+      await boardgameUpdateWeight(Number(gameId), Number(weight), userId);
     }
-
-    UpdateWeightModel(Number(weight), gameId); // mysql
   } catch (err) {
+    // 6. Xử lý lỗi nếu có
+    console.error("Error updating weight boardgame:", err);
     res.status(500).json({ error: "Internal server error" });
   }
-}
+};
 
 export const updateBBGLink = async (req: Request, res: Response) => {
   try {
+    // 1. Lấy gameId từ request params
     const gameId = req.params.gameId;
-    const { BGGLink } = req.body;
-    UpdateBBGLink(BGGLink, gameId);
 
+    // 2. Lấy BGGLink từ request body
+    const { BGGLink } = req.body;
+
+    // 3. Trả về response thành công ngay lập tức
     res.status(201).json({
       success: true,
       message: req.t("boardgame.update.bgglink.success"),
     });
 
+    // 4. Lấy userId từ request (nếu có)
     const userId = req.user?.id;
-    if (userId) {
-      const gameOld = await getBoardgameDetails(Number(gameId));
-      let changes: Record<string, { oldValue: any; newValue: any }> = {};
 
-      changes.boardgamegeek_url = { oldValue: gameOld?.boardgamegeek_url, newValue: BGGLink };
-      addBoardgameHistory(Number(gameId), {
-        action: "update",
-        updated_by: userId,
-        changes
-      });
+    // 5. Nếu có userId, gọi hàm cập nhật `BGGLink`
+    if (userId) {
+      await boardgameUpdateBGGLink(Number(gameId), BGGLink, userId);
     }
   } catch (err) {
-    console.error("Error update BGGLink boardgame:", err);
+    // 6. Xử lý lỗi nếu có
+    console.error("Error updating BGGLink boardgame:", err);
     res.status(500).json({ error: "Internal server error" });
   }
-}
+};
 
 export const updateShortcut = async (req: Request, res: Response) => {
   try {
+    // 1. Lấy gameId từ request params
     const gameId = req.params.gameId;
+
+    // 2. Lấy shortcut từ request body
     const { shortcut } = req.body;
 
+    // 3. Trả về response thành công ngay lập tức
     res.status(201).json({
       success: true,
       message: req.t("boardgame.update.shortcut.success"),
     });
 
+    // 4. Lấy userId từ request (nếu có)
     const userId = req.user?.id;
-    if (userId) {
-      const gameOld = await getBoardgameDetails(Number(gameId));
-      let changes: Record<string, { oldValue: any; newValue: any }> = {};
 
-      changes.shortcut = { oldValue: gameOld?.shortcut, newValue: shortcut };
-      addBoardgameHistory(Number(gameId), {
-        action: "update",
-        updated_by: userId,
-        changes
-      });
+    // 5. Nếu có userId, gọi hàm cập nhật `shortcut`
+    if (userId) {
+      await boardgameUpdateShortcut(Number(gameId), shortcut, userId);
     }
-    UpdateShortcut(shortcut, gameId);
   } catch (err) {
-    console.error("Error update shortcut boardgame:", err);
+    // 6. Xử lý lỗi nếu có
+    console.error("Error updating shortcut boardgame:", err);
     res.status(500).json({ error: "Internal server error" });
   }
-}
+};
 
 export const updateDescription = async (req: Request, res: Response) => {
   try {
+    // 1. Lấy gameId từ request params
     const gameId = req.params.gameId;
+
+    // 2. Lấy description từ request body
     const { description } = req.body;
 
+    // 3. Trả về response thành công ngay lập tức
     res.status(201).json({
       success: true,
       message: req.t("boardgame.update.description.success"),
     });
-    UpdateDescription(description, gameId); //mysql
-    const userId = req.user?.id;
-    if (userId) {
-      const gameOld = await getBoardgameDetails(Number(gameId));
-      let changes: Record<string, { oldValue: any; newValue: any }> = {};
 
-      changes.description = { oldValue: gameOld?.description, newValue: description };
-      addBoardgameHistory(Number(gameId), {
-        action: "update",
-        updated_by: userId,
-        changes
-      });
-    } // history
+    // 4. Lấy userId từ request (nếu có)
+    const userId = req.user?.id;
+
+    // 5. Nếu có userId, gọi hàm cập nhật `description`
+    if (userId) {
+      await boardgameUpdateDescription(Number(gameId), description, userId);
+    }
   } catch (err) {
-    console.error("Error update shortcut boardgame:", err);
+    // 6. Xử lý lỗi nếu có
+    console.error("Error updating description boardgame:", err);
     res.status(500).json({ error: "Internal server error" });
   }
-}
+};
 
 export const updateNumberPlayers = async (req: Request, res: Response) => {
   try {
+    // 1. Lấy gameId từ request params
     const gameId = req.params.gameId;
+
+    // 2. Lấy minPlayers và maxPlayers từ request body
     const { minPlayers, maxPlayers } = req.body;
 
+    // 3. Trả về response thành công ngay lập tức
     res.status(201).json({
       success: true,
       message: req.t("boardgame.update.number-player.success"),
     });
 
+    // 4. Lấy userId từ request (nếu có)
     const userId = req.user?.id;
-    if (userId) {
-      const gameOld = await getBoardgameDetails(Number(gameId));
-      let changes: Record<string, { oldValue: any; newValue: any }> = {};
 
-      changes.numberPlayer = {
-        oldValue: {
-          min_players: gameOld?.min_players,
-          maxPlayers: gameOld?.max_players
-        },
-        newValue:
-        {
-          min_players: minPlayers,
-          max_players: maxPlayers
-        }
-      };
-      addBoardgameHistory(Number(gameId), {
-        action: "update",
-        updated_by: userId,
-        changes
-      });
-    } // history
-    UpdateNumeberPlayers(minPlayers, maxPlayers, gameId); // mysql
+    // 5. Nếu có userId, gọi hàm cập nhật `number of players`
+    if (userId) {
+      await boardgameUpdateNumberPlayers(Number(gameId), minPlayers, maxPlayers, userId);
+    }
   } catch (err) {
-    console.error("Error update shortcut boardgame:", err);
+    // 6. Xử lý lỗi nếu có
+    console.error("Error updating number of players for boardgame:", err);
     res.status(500).json({ error: "Internal server error" });
   }
-}
+};
 
 export const updateDuration = async (req: Request, res: Response) => {
   try {
+    // 1. Lấy gameId từ request params
     const gameId = req.params.gameId;
+
+    // 2. Lấy min và max từ request body
     const { min, max } = req.body;
 
+    // 3. Trả về response thành công ngay lập tức
     res.status(201).json({
       success: true,
       message: req.t("boardgame.update.duration.success"),
     });
 
+    // 4. Lấy userId từ request (nếu có)
     const userId = req.user?.id;
-    if (userId) {
-      const gameOld = await getBoardgameDetails(Number(gameId));
-      let changes: Record<string, { oldValue: any; newValue: any }> = {};
 
-      changes.numberPlayer = {
-        oldValue: {
-          min_play_time: gameOld?.min_play_time,
-          max_play_time: gameOld?.max_play_time
-        },
-        newValue:
-        {
-          min_play_time: min,
-          max_play_time: max
-        }
-      };
-      addBoardgameHistory(Number(gameId), {
-        action: "update",
-        updated_by: userId,
-        changes
-      });
-    } // history
-    UpdateDuration(min, max, gameId);
+    // 5. Nếu có userId, gọi hàm cập nhật `duration`
+    if (userId) {
+      await boardgameUpdateDuration(Number(gameId), min, max, userId);
+    }
   } catch (err) {
-    console.error("Error update shortcut boardgame:", err);
+    // 6. Xử lý lỗi nếu có
+    console.error("Error updating duration for boardgame:", err);
     res.status(500).json({ error: "Internal server error" });
   }
-}
+};
 
 export const updateAvatar = async (req: Request, res: Response) => {
   try {
+    // 1. Lấy gameId từ request params
     const gameId = req.params.gameId;
+
+    // 2. Lấy url từ request body
     const { url } = req.body;
 
+    // 3. Trả về response thành công ngay lập tức
     res.status(201).json({
       success: true,
-      message: req.t("boardgame.update.duration.success"),
+      message: req.t("boardgame.update.avatar.success"),
     });
 
+    // 4. Lấy userId từ request (nếu có)
     const userId = req.user?.id;
+
+    // 5. Nếu có userId, gọi hàm cập nhật `avatar`
     if (userId) {
-      const gameOld = await getBoardgameDetails(Number(gameId));
-      let changes: Record<string, { oldValue: any; newValue: any }> = {};
-
-      changes.avatar_url = { oldValue: gameOld?.avatar_url, newValue: url };
-      addBoardgameHistory(Number(gameId), {
-        action: "update",
-        updated_by: userId,
-        changes
-      });
-    } // history
-
-
-    UpdateAvatar(url, gameId);
+      await boardgameUpdateAvatar(Number(gameId), url, userId);
+    }
   } catch (err) {
-    console.error("Error update shortcut boardgame:", err);
+    // 6. Xử lý lỗi nếu có
+    console.error("Error updating avatar for boardgame:", err);
     res.status(500).json({ error: "Internal server error" });
   }
-}
+};
 
 export const updateBackground = async (req: Request, res: Response) => {
   try {
+    // 1. Lấy gameId từ request params
     const gameId = req.params.gameId;
+
+    // 2. Lấy url từ request body
     const { url } = req.body;
+
+    // 3. Trả về response thành công ngay lập tức
     res.status(201).json({
       success: true,
-      message: req.t("boardgame.update.duration.success"),
+      message: req.t("boardgame.update.background.success"),
     });
 
+    // 4. Lấy userId từ request (nếu có)
     const userId = req.user?.id;
-    if (userId) {
-      const gameOld = await getBoardgameDetails(Number(gameId));
-      let changes: Record<string, { oldValue: any; newValue: any }> = {};
 
-      changes.background_image_url = { oldValue: gameOld?.background_image_url, newValue: url };
-      addBoardgameHistory(Number(gameId), {
-        action: "update",
-        updated_by: userId,
-        changes
-      });
-    } // history
-    UpdateBackground(url, gameId);
+    // 5. Nếu có userId, gọi hàm cập nhật `background`
+    if (userId) {
+      await boardgameUpdateBackground(Number(gameId), url, userId);
+    }
   } catch (err) {
-    console.error("Error update shortcut boardgame:", err);
+    // 6. Xử lý lỗi nếu có
+    console.error("Error updating background for boardgame:", err);
     res.status(500).json({ error: "Internal server error" });
   }
-}
+};
 
 export const checkOwner = async (req: Request, res: Response): Promise<void> => {
   const gameId = req.params.gameId;
@@ -384,7 +359,7 @@ export const checkOwner = async (req: Request, res: Response): Promise<void> => 
       message: "Unauthorized. Token is missing.",
       data: false,
     });
-    return 
+    return
   }
 
   try {
@@ -397,7 +372,7 @@ export const checkOwner = async (req: Request, res: Response): Promise<void> => 
         message: "Token is expired.",
         data: false,
       });
-      return ;
+      return;
     }
 
     // If the user has an admin role, grant access

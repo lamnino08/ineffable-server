@@ -1,3 +1,5 @@
+import { Status } from "../Enum/Status";
+
 export interface Rule {
   rule_id: number;
   title: string;
@@ -79,12 +81,10 @@ export interface BoardgameCategory {
   game_count: number;
   like_count: number;
   liked: boolean;
-  status: BoardgameCategoryStatus;
+  status: Status;
   create_at: Date;
   user_name: string;
 }
-
-export type BoardgameCategoryStatus = "pending" | "public" | "hidden";
 
 export interface BoardgameMechanic {
   mechanic_id: number;
@@ -95,7 +95,7 @@ export interface BoardgameMechanic {
   game_count: number;
   like_count: number;
   liked: boolean;
-  status: BoardgameCategoryStatus;
+  status: Status;
   create_at: Date;
   user_name: string;
 }

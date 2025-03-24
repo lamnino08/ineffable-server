@@ -19,7 +19,6 @@ import { getUserNameById } from "@/models/userModel";
 import { Status } from "@/types/Enum/Status";
 import { addLikeToMechanic, getListLikeCount, hasUserLikedMechanic, removeLikeFromMechanic } from "@/services/redis/mechanicLiked";
 import { addMechanicToUserLikes, getUserLikedMechanics, removeMechanicFromUserLikes } from "@/services/mongodb/like/mechanicLike";
-import { getAllBoardgameCounts } from "@/services/redis/boardgameCategory";
 import { addMechanicToGame, likeMechanicAction, unlikeMechanicAction } from "@/services/redis/boardgameMechanic";
 import { BoardgameHistory } from "@/models/history/BoargameHistoryModel";
 import { addBoardgameHistory } from "@/services/mongodb/history/BoardgameHistoryService";
@@ -205,7 +204,7 @@ export const getAllMechanicList = async (req: Request, res: Response) => {
     const mechanics = await getAllMechanics(filters);
 
     // ✅ Lấy số lượng game sử dụng mỗi mechanic từ Redis
-    const gameCounts = await getAllBoardgameCounts();
+    // const gameCounts = await getAllBoardgameCounts();
 
     // ✅ Lấy danh sách mechanic mà user đã like
     // let likedMechanics: number[] = [];
@@ -220,7 +219,7 @@ export const getAllMechanicList = async (req: Request, res: Response) => {
     // ✅ Gộp dữ liệu số lượng game + số lượng like vào danh sách mechanics
     const mechanicsWithGameCount = mechanics.map(mechanic => ({
       ...mechanic,
-      game_count: gameCounts[mechanic.mechanic_id].count || 0,
+      // game_count: gameCounts[mechanic.mechanic_id].count || 0,
       // liked: likedMechanics.includes(mechanic.mechanic_id),
       // like_count: likeCounts[mechanic.mechanic_id] || 0,
     }));

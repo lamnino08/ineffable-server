@@ -1,5 +1,6 @@
 import { getRedis } from "@/config/database/redis";
 import { addMechanicToBoardgame, getAllMechanicLikes, getBoardgameCountByMechanic, getMechanicsByBoardgame, likeMechanic, removeMechanicFromBoardgame, unlikeMechanic } from "@/models/boardgame/boardgameMechanicModel";
+import { BoardgameMechanic } from "@/types/models/Boardgame";
 
 /**
  * 📌 Add mechanic to boardgame (prioritize saving to MySQL first, then update Redis cache)
@@ -46,28 +47,34 @@ export async function removeMechanicFromGame(gameId: number, mechanicId: number)
 }
 
 // Fetch list of mechanics for a boardgame from Redis
-export const getBoardgameMechanics = async (boardgameId: number): Promise<any[]> => {
+// Fetch list of mechanics for a boardgame from Redis
+export const getBoardgameMechanics = async (boardgameId: number): Promise<BoardgameMechanic[]> => {
     const redisClient = getRedis();
-    
+
+    // 1. Kiểm tra Redis client
     if (!redisClient) {
-        console.warn("Redis is not available. Fetching from MySQL.");
+        // 2. Nếu Redis không khả dụng, lấy từ MySQL
         return await getMechanicsByBoardgame(boardgameId);
     }
-    
+
+    // 3. Kiểm tra dữ liệu trong Redis
     const cacheKey = `boardgame:${boardgameId}:mechanics`;
     const cachedData = await redisClient.get(cacheKey);
+
+    // 4. Nếu có dữ liệu trong Redis, trả về luôn
     if (cachedData) {
         return JSON.parse(cachedData);
     }
 
-    // If no cache, fetch from MySQL
+    // 5. Nếu không có, lấy từ MySQL
     const mechanics = await getMechanicsByBoardgame(boardgameId);
 
-    // Store cache in Redis (TTL 1 day)
+    // 6. Lưu dữ liệu vào Redis (TTL 1 ngày)
     await redisClient.set(cacheKey, JSON.stringify(mechanics), { EX: 3600 * 24 });
 
     return mechanics;
 };
+
 
 /**
  * 📌 Get the number of boardgames in a mechanic (prioritize Redis)

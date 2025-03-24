@@ -13,7 +13,12 @@ interface Config {
   };
   mongodb: string;
   jwtSecret: string;
-  chatgptKey: string;
+  elasticsearch: {
+    url: string,
+    username: string,
+    password: string
+  }
+  redis_url: string;
 }
 
 // Define the config object with proper types
@@ -27,7 +32,12 @@ const config: Config = {
   },
   mongodb: process.env.MONGO_URL || "mongodb://localhost:27017/inneffable",
   jwtSecret: process.env.JWT_SECRET || 'default_secret_key',
-  chatgptKey: process.env.CHATGPT_KEY || "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", 
+  elasticsearch: {
+    url: process.env.ELASTICSEARCH_URL || 'http://localhost:9200',
+    username: process.env.ELASTICSEARCH_USERNAME || 'elastic',
+    password: process.env.ELASTICSEARCH_PASSWORD || 'Zop6OKInQJQi8lwsrY26',
+  },
+  redis_url: process.env.REDIS_URL || 'redis://localhost:6379',
 };
 
 export default config;

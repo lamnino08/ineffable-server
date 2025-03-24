@@ -32,11 +32,23 @@
             "description": {
                 "success": "Boardgame description updated successfully"
             },
+            "age": {
+                "success": "Boardgame age updated successfully"
+            },
+            "weight": {
+                "success": "Boardgame weight updated successfully"
+            },
             "number-player": {
                 "success": "Boardgame number player updated successfully"
             },
             "duration": {
                 "success": "Boardgame duration updated successfully"
+            },
+            "avatar": {
+                "success": "Boardgame avatar updated successfully"
+            },
+            "background": {
+                "success": "Boardgame background updated successfully"
             }
         },
         "rule": {

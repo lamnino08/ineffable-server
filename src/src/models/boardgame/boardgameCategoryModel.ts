@@ -2,7 +2,7 @@
 
 import connection from "@/config/database/db";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
-import { BoardgameCategoryStatus, BoardgameCategory } from "@/types/models/Boardgame"; // Import loại dữ liệu nếu bạn có enum cho `status`
+import { BoardgameCategory } from "@/types/models/Boardgame"; // Import loại dữ liệu nếu bạn có enum cho `status`
 import { Status } from "@/types/Enum/Status";
 
 // Category
@@ -147,12 +147,13 @@ export const getAllCategories = async (
   });
 };
 
-/**
- * ✅ Like a category (prevents duplicates)
- */
-export const likeCategory = async (user_id: number, category_id: number): Promise<void> => {
+
+/*
+  Board game catergory like
+*/
+export const likeCategoryModel = async (user_id: number, category_id: number): Promise<void> => {
   return new Promise((resolve, reject) => {
-    const query = "INSERT IGNORE INTO category_likes (user_id, category_id) VALUES (?, ?)";
+    const query = "INSERT IGNORE INTO boardgame_category_likes (user_id, category_id) VALUES (?, ?)";
 
     connection.query(query, [user_id, category_id], (error) => {
       if (error) {
@@ -164,12 +165,9 @@ export const likeCategory = async (user_id: number, category_id: number): Promis
   });
 };
 
-/**
- * ✅ Unlike a category
- */
 export const unlikeCategory = async (user_id: number, category_id: number): Promise<void> => {
   return new Promise((resolve, reject) => {
-    const query = "DELETE FROM category_likes WHERE user_id = ? AND category_id = ?";
+    const query = "DELETE FROM boardgame_category_likes WHERE user_id = ? AND category_id = ?";
 
     connection.query(query, [user_id, category_id], (error) => {
       if (error) {
@@ -177,6 +175,20 @@ export const unlikeCategory = async (user_id: number, category_id: number): Prom
         return reject("Failed to unlike category");
       }
       resolve();
+    });
+  });
+};
+
+export const checkIfUserLikedCategoryModel = async (user_id: number, category_id: number): Promise<boolean> => {
+  return new Promise((resolve, reject) => {
+    const query = "SELECT COUNT(*) as count FROM boardgame_category_likes WHERE user_id = ? AND category_id = ?";
+
+    connection.query(query, [user_id, category_id], (error, results: RowDataPacket[]) => {
+      if (error) {
+        console.error("❌ Error checking like status:", error);
+        return reject("Failed to check like status");
+      }
+      resolve(results[0].count > 0);
     });
   });
 };
@@ -203,10 +215,19 @@ export const getAllCategoryLikes = async (): Promise<{ categoryId: number; likeC
   });
 };
 
+export const getUserLikedCategoryIds = async(user_id: number): Promise<number[]> =>{
+  const query = "SELECT category_id FROM boardgame_category_likes WHERE user_id = ?";
+  return new Promise((resolve, reject) => {
+      connection.query(query, [user_id], (error, results: RowDataPacket[]) => {
+          if (error) {
+              console.error("❌ Lỗi khi lấy category đã like:", error);
+              return reject([]);
+          }
+          resolve(results.map((row: any) => row.category_id));
+      });
+  });
+}
 
-/**
- * ✅ Check if user liked a category
- */
 export const checkUserLiked = async (user_id: number, category_id: number): Promise<boolean> => {
   return new Promise((resolve, reject) => {
     const query = `
@@ -225,9 +246,9 @@ export const checkUserLiked = async (user_id: number, category_id: number): Prom
   });
 };
 
-export const getCategorylikesCount = async (category_id: number): Promise<number> => {
+export const getCategorylikesCountModel = async (category_id: number): Promise<number> => {
   return new Promise((resolve, reject) => {
-    const query = "SELECT COUNT(*) AS total FROM category_likes WHERE category_id = ?;";
+    const query = "SELECT COUNT(*) AS total FROM boardgame_category_likes WHERE category_id = ?;";
 
     connection.query(query, [category_id], (error, results: RowDataPacket[]) => {
       if (error) {
@@ -235,6 +256,38 @@ export const getCategorylikesCount = async (category_id: number): Promise<number
         return reject("Failed unlike category");
       }
       resolve(results[0].total);
+    });
+  });
+};
+
+/**
+ * Lấy số lượng like của nhiều category
+ */
+export const getCategoryLikesCountsModel = async (categoryIds: number[]): Promise<Record<number, number>> => {
+  if (categoryIds.length === 0) return {};
+
+  return new Promise((resolve, reject) => {
+    const placeholders = categoryIds.map(() => "?").join(",");
+    const query = `SELECT category_id, COUNT(*) AS total FROM boardgame_category_likes WHERE category_id IN (${placeholders}) GROUP BY category_id;`;
+
+    connection.query(query, categoryIds, (error, results: RowDataPacket[]) => {
+      if (error) {
+        console.error("Error fetching category likes:", error);
+        return reject("Failed to fetch category likes");
+      }
+
+      const likeCounts: Record<number, number> = {};
+      results.forEach(row => {
+        likeCounts[row.category_id] = row.total;
+      });
+
+      categoryIds.forEach(id => {
+        if (!likeCounts[id]) {
+          likeCounts[id] = 0;
+        }
+      });
+
+      resolve(likeCounts);
     });
   });
 };
@@ -322,6 +375,40 @@ export const getBoardgamesByCategory = async (
       resolve(results);
     });
   });
+};
+
+/**
+ * Lấy số lượng boardgame của nhiều category từ MySQL
+ */
+export const getBoardgameCountByCategoriesModel = async (categoryIds: number[]): Promise<Record<number, number>> => {
+    if (categoryIds.length === 0) return {};
+
+    return new Promise((resolve, reject) => {
+        const placeholders = categoryIds.map(() => "?").join(",");
+        const query = `SELECT category_id, COUNT(*) AS total FROM boardgame_categories_mapping WHERE category_id IN (${placeholders}) GROUP BY category_id;`;
+
+        connection.query(query, categoryIds, (error, results: RowDataPacket[]) => {
+            if (error) {
+                console.error("Error fetching boardgame count:", error);
+                return reject("Failed to fetch boardgame count");
+            }
+
+            // Chuyển kết quả thành object { categoryId: gameCount }
+            const gameCounts: Record<number, number> = {};
+            results.forEach(row => {
+                gameCounts[row.category_id] = row.total;
+            });
+
+            // Nếu category nào không có trong kết quả thì mặc định là 0
+            categoryIds.forEach(id => {
+                if (!gameCounts[id]) {
+                    gameCounts[id] = 0;
+                }
+            });
+
+            resolve(gameCounts);
+        });
+    });
 };
 
 /**
